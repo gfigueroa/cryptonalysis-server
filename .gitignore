@@ -1,0 +1,20 @@
+# iPython
+*.ipynb_checkpoints
+
+# PyCharm
+.idea
+venv
+
+## File-based project format:
+*.iws
+
+# Flask
+instance
+
+# Class files
+*.pyc
+
+# Setup files
+*.egg-info/
+
+.env
