@@ -1,3 +1,4 @@
-graft analysis
+graft jupyter
 graft cryptonalysis/templates
 graft cryptonalysis/static
+graft ml_core
