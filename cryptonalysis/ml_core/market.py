@@ -16,6 +16,16 @@ class MarketParameters:
     def __init__(self, transaction_fee_perc=None, transaction_fee_flat=None,
                  min_transaction_size_crypto=None, min_transaction_size_fiat=None,
                  max_transaction_size_crypto=None, max_transaction_size_fiat=None):
+        """
+
+        :param transaction_fee_perc:
+        :param transaction_fee_flat:
+        :param min_transaction_size_crypto:
+        :param min_transaction_size_fiat:
+        :param max_transaction_size_crypto:
+        :param max_transaction_size_fiat:
+        """
+
         if transaction_fee_perc and (transaction_fee_perc < 0 or transaction_fee_perc > 1):
             raise ValueError('Transaction fee (%) must be between 0 and 1')
 

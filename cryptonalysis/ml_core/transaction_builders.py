@@ -1,5 +1,6 @@
 from random import randint
 from abc import ABCMeta, abstractmethod
+from datetime import date
 import logging
 
 # Logging
@@ -24,12 +25,13 @@ class CryptoPredictor:
     transactions = []
 
     # Default parameters
+    _ending_date = date.today()
     _starting_investment = 100.0  # USD
     _daily_allowance = 5.0
     _lookahead_days = 1
 
     def __init__(self, market, starting_date, price_list, opening_price_list, window_size, crypto_name,
-                 starting_investment=None, daily_allowance=None, lookahead_days=None):
+                 ending_date=None, starting_investment=None, daily_allowance=None, lookahead_days=None):
         """
         CryptoPredictor constructor.
         :param market: An instance of global market parameters
@@ -39,6 +41,7 @@ class CryptoPredictor:
         starting date
         :param window_size: The window size to use for making transactions
         :param crypto_name: The cryptocurrency 3-character code (e.g., BTC, ETH, etc.)
+        :param ending_date: The date in which to stop making transactions (default is today)
         :param starting_investment: The starting investment in fiat
         :param daily_allowance: The daily amount of money (in fiat) that can be invested in making transactions
         :param lookahead_days: The number of days to look ahead when making a transaction
@@ -46,10 +49,13 @@ class CryptoPredictor:
 
         self.market = market
         self._starting_date = starting_date
-        self._price_list = price_list
-        self._opening_price_list = opening_price_list
+        self._ending_date = ending_date or self._ending_date
         self._window_size = window_size
         self._crypto_name = crypto_name
+
+        # Price period
+        self._price_list = price_list[starting_date:ending_date]
+        self._opening_price_list = opening_price_list[starting_date:ending_date]
 
         # Override default parameters
         self._starting_investment = starting_investment or self._starting_investment
@@ -361,28 +367,32 @@ class ProbabilityPredictor(CryptoPredictor):
     """
 
     def __init__(self, market, starting_date, price_list, opening_price_list, window_size, crypto_name,
-                 starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=1, prob_sell=1):
+                 ending_date=None, starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=1,
+                 prob_sell=1):
         """
         ProbabilityPredictor constructor. The parameters are the same as those in CryptoPredictor with the exception of
         prob_buy and prob_sell, which indicate the random probability [0-1] that the transaction will be 'BUY' when it
         needs to buy and 'SELL' when it needs to sell. The rules for buying or selling are the same as the
         BiffPredictor.
-        :param market:
-        :param starting_date:
-        :param price_list:
-        :param opening_price_list:
-        :param window_size:
-        :param crypto_name:
-        :param starting_investment:
-        :param daily_allowance:
-        :param lookahead_days:
+        :param market: An instance of global market parameters
+        :param starting_date: The date from which to start making transactions
+        :param price_list: The list of all crypto prices to use for making transactions from the starting date
+        :param opening_price_list: The list of all opening crypto prices to use for making transactions from the
+        starting date
+        :param window_size: The window size to use for making transactions
+        :param crypto_name: The cryptocurrency 3-character code (e.g., BTC, ETH, etc.)
+        :param ending_date: The date in which to stop making transactions (default is today)
+        :param starting_investment: The starting investment in fiat
+        :param daily_allowance: The daily amount of money (in fiat) that can be invested in making transactions
+        :param lookahead_days: The number of days to look ahead when making a transaction
         :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
         when it actually has to buy, based on BiffPredictor rules.
         :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
         when it actually has to sell, based on BiffPredictor rules.
         """
         super(ProbabilityPredictor, self).__init__(market, starting_date, price_list, opening_price_list, window_size,
-                                                   crypto_name, starting_investment, daily_allowance, lookahead_days)
+                                                   crypto_name, ending_date, starting_investment, daily_allowance,
+                                                   lookahead_days)
 
         if prob_buy < 0 or prob_buy > 1:
             raise ValueError("prob_buy should be a decimal between 0 (inclusive) and 1 (inclusive).")
