@@ -8,7 +8,7 @@ class MarketParameters:
 
     transaction_fee_perc = 0.01
     transaction_fee_flat = 0
-    min_transaction_size_crypto = 0.1
+    min_transaction_size_crypto = 0.01
     min_transaction_size_fiat = 1
     max_transaction_size_crypto = 100
     max_transaction_size_fiat = 100
@@ -17,7 +17,7 @@ class MarketParameters:
                  min_transaction_size_crypto=None, min_transaction_size_fiat=None,
                  max_transaction_size_crypto=None, max_transaction_size_fiat=None):
         """
-
+        MarketParameters constructor.
         :param transaction_fee_perc:
         :param transaction_fee_flat:
         :param min_transaction_size_crypto:

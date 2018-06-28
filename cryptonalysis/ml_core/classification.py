@@ -4,11 +4,11 @@ from sklearn import svm
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.neural_network import MLPClassifier
+import config
 
 
 # Logging
-LOGGING_LEVEL = logging.INFO
-logging.basicConfig(level=LOGGING_LEVEL)
+logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
 
@@ -55,15 +55,15 @@ def split_datasets(df, shuffle, training_size, dev_size):
         dev_set = df[:int(len(df) * dev_size)]
         eval_set = df[~df.index.isin(dev_set.index)]
         X_dev = dev_set.iloc[:, :-1]
-        y_dev = dev_set.iloc[:, -1:]
+        y_dev = dev_set.iloc[:, -1]
         X_eval = eval_set.iloc[:, :-1]
-        y_eval = eval_set.iloc[:, -1:]
+        y_eval = eval_set.iloc[:, -1]
 
     # Used for non-CV
     X_training = training_data.iloc[:, :-1]
-    y_training = training_data.iloc[:, -1:]
+    y_training = training_data.iloc[:, -1]
     X_testing = testing_data.iloc[:, :-1]
-    y_testing = testing_data.iloc[:, -1:]
+    y_testing = testing_data.iloc[:, -1]
 
     logger.info("Length X: {0}".format(len(X)))
     logger.info("Length X_training: {0}".format(len(X_training)))
@@ -108,10 +108,9 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     print '\n'
 
     # Evaluation dataset
-
-    logger.info("Detailed classification report:\n")
+    logger.info("Detailed classification report:")
     logger.info("The model is trained on the full development set (size {0}).".format(len(X_dev)))
-    logger.info("The scores are computed on the full evaluation set (size {0}).\n".format(len(X_eval)))
+    logger.info("The scores are computed on the full evaluation set (size {0}).".format(len(X_eval)))
     y_true, y_pred = y_eval, clf.predict(X_eval)
     logger.info('\n' + classification_report(y_true, y_pred))
 
@@ -152,6 +151,8 @@ def run_classification_pipeline(preprocessed_df, shuffle_data=True, training_siz
     }
     grid_search_cv_nn = get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
 
+    logger.info("Classification pipeline complete!\n")
+
 
 if __name__ == '__main__':
     # Grid search data pipeline parameters
@@ -176,9 +177,9 @@ if __name__ == '__main__':
                 break
 
             # Grid search classification pipeline parameters
-            for shuffle_data in classification_pipeline_parameters['shuffle_data']:
+            for shu in classification_pipeline_parameters['shuffle_data']:
                 try:
-                    run_classification_pipeline(preprocessed_data, shuffle_data=shuffle_data)
+                    run_classification_pipeline(preprocessed_data, shuffle_data=shu)
                 except Exception as e:
                     logger.error("Error in classification pipeline! Skipping...")
                     logger.error(e.message)

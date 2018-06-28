@@ -2,14 +2,14 @@ import logging
 import pandas as pd
 from pandas import DataFrame
 from datetime import date
-from transaction_builders import BiffPredictor
+from transaction_builders import BiffPredictor, RandomPredictor, ProbabilityPredictor
 from market import market
 from sklearn.preprocessing import StandardScaler
+import config
 
 
 # Logging
-LOGGING_LEVEL = logging.INFO
-logging.basicConfig(level=LOGGING_LEVEL)
+logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
 HISTORICAL_DATA_FILE = '../data/ethereum_historical.csv'
@@ -117,8 +117,9 @@ def normalize_df(df, by_row):
     return norm_df
 
 
-def run_data_pipeline(historical_file, starting_date=None, ending_date=None, price_column='Close', window_size=30,
-                      crypto_name='ETH', normalize=True, normalize_by_row=False):
+def run_data_pipeline(historical_file, starting_date=None, ending_date=None, price_column='Close',
+                      predictor_class=BiffPredictor, window_size=30, crypto_name='ETH', normalize=True,
+                      normalize_by_row=False, **kwargs):
     """
     Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for the classification
     task.
@@ -126,11 +127,15 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
     :param starting_date: The date from which the data pipeline will begin (inclusive) (default is 01/01/2017)
     :param ending_date: The date in which the data pipeline will end (non-inclusive) (default is today)
     :param price_column: The name of the column containing the crypto price (default is 'Close')
+    :param predictor_class: The class used to build transactions (default is BiffPredictor)
+    :type predictor_class: ``classobj``
     :param window_size: The size of the price window (in days) to use in the transaction prediction (default is 30)
     :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.) (default is 'ETH')
     :param normalize: Whether or not the data should be normalized (default is True)
-    :param normalize_by_row: Whether or not the data should be normalize by row or column (ignored if normalize=False)
+    :param normalize_by_row: Whether or not the data should be normalized by row or column (ignored if normalize=False)
     (default is False)
+    :param **kwargs: Dictionary of parameters used by the predictor_class (e.g. ProbabilityPredictor's  prob_buy and
+    prob_sell parameters).
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
     """
 
@@ -154,11 +159,18 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
     price_list = daily_df[price_column]
     opening_price_list = daily_df['Open']
 
-    biff = BiffPredictor(market, starting_date, price_list, opening_price_list, window_size, crypto_name, ending_date)
-    biff.run_predictor()
+    if predictor_class == ProbabilityPredictor:
+        prob_buy = kwargs['prob_buy'] if 'prob_buy' in kwargs else 1
+        prob_sell = kwargs['prob_sell'] if 'prob_sell' in kwargs else 1
+        predictor = ProbabilityPredictor(market, starting_date, price_list, opening_price_list, window_size, crypto_name,
+                                         ending_date, prob_buy=prob_buy, prob_sell=prob_sell)
+    else:
+        predictor = predictor_class(market, starting_date, price_list, opening_price_list, window_size, crypto_name,
+                                    ending_date)
+    predictor.run_predictor()
 
     # 4. Get transactions DataFrame
-    transactions_df = build_transactions_df(biff.transactions)
+    transactions_df = build_transactions_df(predictor.transactions)
 
     logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == 1])))
     logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == 0])))
@@ -167,9 +179,19 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
     if normalize:
         transactions_df = normalize_df(transactions_df, normalize_by_row)
 
+    logger.info("Preprocessing pipeline complete!\n")
+
     return transactions_df
 
 
 if __name__ == '__main__':
-    preprocessed_df = run_data_pipeline(HISTORICAL_DATA_FILE)
-    logger.info(preprocessed_df.head())
+    start_date = date(2018, 1, 1)
+    predictor_cls = ProbabilityPredictor
+    predictor_params = {
+        'prob_buy': 0.6,
+        'prob_sell': 0.6
+    }
+
+    preprocessed_df = run_data_pipeline(HISTORICAL_DATA_FILE, starting_date=start_date, predictor_class=predictor_cls,
+                                        **predictor_params)
+    logger.debug(preprocessed_df.head())

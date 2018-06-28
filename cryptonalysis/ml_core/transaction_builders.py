@@ -1,11 +1,11 @@
-from random import randint
+import random
 from abc import ABCMeta, abstractmethod
 from datetime import date
 import logging
+import config
 
 # Logging
-LOGGING_LEVEL = logging.INFO
-logging.basicConfig(level=LOGGING_LEVEL)
+logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
 
@@ -22,6 +22,7 @@ class CryptoPredictor:
     # Initial conditions
     total_investment = 0
     cash = 0
+    owned_crypto = 0
     transactions = []
 
     # Default parameters
@@ -64,8 +65,8 @@ class CryptoPredictor:
 
         # Dependent parameters
         self.total_investment += self._starting_investment
-        self._starting_price = float(price_list[0])
-        self.owned_crypto = self._starting_investment / self._starting_price
+        self._starting_price = float(self._opening_price_list[self._window_size])
+        self.cash = self._starting_investment
 
     @abstractmethod
     def get_transaction(self, prices, current_price, future_price):
@@ -136,7 +137,8 @@ class CryptoPredictor:
             assert self.owned_crypto >= 0
 
         logger.debug(
-            "{0} - {1} {2} (${3})".format('BUY' if buy else 'SELL', self._crypto_name, crypto_amount, fiat_amount))
+            "{0} - {1} {2} (${3})".format('BUY' if buy else 'SELL', self._crypto_name, round(crypto_amount, 4),
+                                          round(fiat_amount, 2)))
 
     def run_predictor(self):
         """
@@ -148,9 +150,13 @@ class CryptoPredictor:
         # Start trading
         logger.info("Running predictor for {0}...".format(self.__class__.__name__))
         logger.info("Starting date: {0}".format(self._starting_date))
+
+        # First crypto purchase
+        current_price = float(self._opening_price_list[self._window_size])
+        self.perform_transaction(True, self.get_max_crypto_transaction(True, current_price), current_price)
+
         day = 1
         stop_day = 0
-        current_price = 0
         for start_day in range(len(self._price_list) - self._window_size):
             stop_day = start_day + self._window_size
             logger.debug("Day {0} - {1}".format(day, self._price_list.index[stop_day]))
@@ -190,17 +196,23 @@ class CryptoPredictor:
 
     def _sell_all_crypto(self, current_price):
         """
-        Sell all crypto in wallet given the last price.
+        Sell all crypto in wallet given the current price.
         :param current_price: The current price (in fiat) of the crypto
         """
+
+        logger.info("*** Before selling all crypto ***")
+        logger.info("Cash: ${0}".format(round(self.cash, 2)))
+        logger.info("Owned crypto: {0} {1}".format(self._crypto_name, round(self.owned_crypto, 4)))
+
         self.cash += (self.owned_crypto * current_price) - (
                     self.owned_crypto * current_price * self.market.transaction_fee_perc)
         self.owned_crypto = 0
 
-        logger.info("Cash: ${0}".format(self.cash))
-        logger.info("Owned crypto: {0} {1}".format(self._crypto_name, self.owned_crypto))
-        logger.info("Total investment: ${0}".format(self.total_investment))
-        logger.info("ROI: ${0}".format(self.cash - self.total_investment))
+        logger.info("*** After selling all crypto ***")
+        logger.info("Cash: ${0}".format(round(self.cash, 2)))
+        logger.info("Owned crypto: {0} {1}".format(self._crypto_name, round(self.owned_crypto, 4)))
+        logger.info("Total investment: ${0}".format(round(self.total_investment, 2)))
+        logger.info("ROI: ${0}".format(round(self.cash - self.total_investment, 2)))
         logger.info("*" * 20)
 
 
@@ -218,9 +230,9 @@ class BiffPredictor(CryptoPredictor):
         Buy what you can with your cash if future price is higher than current price.
         Sell all if future price is lower than or equal to current price.
         """
-        logger.debug("Cash: ${0}".format(self.cash))
-        logger.debug("Owned crypto: {0} {1}".format(self._crypto_name, self.owned_crypto))
-        logger.debug("Prices: {0}".format(prices))
+        logger.debug("Cash: ${0}".format(round(self.cash, 2)))
+        logger.debug("Owned crypto: {0} {1}".format(self._crypto_name, round(self.owned_crypto, 4)))
+        logger.log(logging.NOTSET, "Prices: {0}".format(prices))
         logger.debug("Current price: ${0}".format(current_price))
         logger.debug("Future price: ${0}".format(future_price))
 
@@ -237,9 +249,9 @@ class BiffPredictor(CryptoPredictor):
             fee = fiat_amount * self.market.transaction_fee_perc
             fiat_amount -= fee
 
-        logger.debug("Transaction fee: ${0}".format(fee))
-        logger.debug("Crypto amount: {0} {1}".format(self._crypto_name, crypto_amount))
-        logger.debug("Fiat amount: ${0}".format(fiat_amount))
+        logger.debug("Transaction fee: ${0}".format(round(fee, 2)))
+        logger.debug("Crypto amount: {0} {1}".format(self._crypto_name, round(crypto_amount, 4)))
+        logger.debug("Fiat amount: ${0}".format(round(fiat_amount, 2)))
 
         # Ignore for transactions less than or close to a minimum crypto/fiat transaction
         if crypto_amount < self.market.min_transaction_size_crypto or \
@@ -309,7 +321,7 @@ class RandomPredictor(CryptoPredictor):
         """
         Buy what you can with your cash or sell all, randomly.
         """
-        transaction_no = randint(0, 1)
+        transaction_no = random.randint(0, 1)
         if transaction_no == 0:
             transaction = 'BUY'
             crypto_amount = (self.cash / current_price) - (self.cash / current_price) * self.market.transaction_fee_perc
@@ -363,7 +375,8 @@ class ProbabilityPredictor(CryptoPredictor):
     """
     Class ProbabilityPredictor.
     Predict 'BUY' or 'SELL' based on a probability for each transaction type.
-    For instance, if prob_buy = 0.4, then prob_sell = 1 - prob_buy = 0.6.
+    For instance, if prob_buy = 0.4 and prob_sell = 0.7, then the predictor has a 40% chance of correctly guessing when
+    to buy, and a 70% chance of correctly guessing when to sell, using the BiffPredictor buy/sell strategy.
     """
 
     def __init__(self, market, starting_date, price_list, opening_price_list, window_size, crypto_name,
@@ -411,7 +424,7 @@ class ProbabilityPredictor(CryptoPredictor):
         Sell all if future price is lower than or equal to current price.
         """
 
-        random_draw = randint(0, 100)
+        random_draw = random.randint(0, 100)
         if future_price > current_price:  # Buy what you can with your cash
             keep = random_draw <= int(self._prob_buy * 100)
             if keep:
