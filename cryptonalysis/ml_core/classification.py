@@ -1,4 +1,7 @@
 import logging
+from datetime import date
+
+from cryptonalysis.ml_core.transaction_builders import BiffPredictorSmart, BiffPredictor
 from preprocessing import run_data_pipeline, HISTORICAL_DATA_FILE
 from sklearn import svm
 from sklearn.metrics import classification_report
@@ -98,6 +101,10 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
 
     logger.info("Best parameters set found on development dataset:")
     logger.info(clf.best_params_)
+    best_index = clf.best_index_
+    best_score = clf.cv_results_['mean_test_score'][best_index]
+    best_std = clf.cv_results_['std_test_score'][best_index]
+    logger.info("Accuracy: %0.3f (+/-%0.03f)" % (best_score, best_std * 2))
 
     logger.debug("\nGrid scores on development set:\n")
     means = clf.cv_results_['mean_test_score']
@@ -156,9 +163,18 @@ def run_classification_pipeline(preprocessed_df, shuffle_data=True, training_siz
 
 if __name__ == '__main__':
     # Grid search data pipeline parameters
+    start_date = date(2016, 1, 1)
+    predictor_cls = BiffPredictorSmart
+    predictor_params = {
+        'prob_buy': 1,
+        'prob_sell': 1,
+        'starting_investment': 100,
+        'daily_allowance': 5,
+        'lookahead_days': 4
+    }
     data_pipeline_parameters = {
         'window_size': [10, 20, 30, 40, 50, 60],
-        'normalize_by_row': [True, False]
+        'normalize_by_row': [True,  False]
     }
     # Grid search classification pipeline parameters
     classification_pipeline_parameters = {
@@ -169,8 +185,9 @@ if __name__ == '__main__':
     for window_size in data_pipeline_parameters['window_size']:
         for normalize_by_row in data_pipeline_parameters['normalize_by_row']:
             try:
-                preprocessed_data = run_data_pipeline(HISTORICAL_DATA_FILE, window_size=window_size,
-                                                      normalize_by_row=normalize_by_row)
+                preprocessed_data = run_data_pipeline(HISTORICAL_DATA_FILE, starting_date=start_date,
+                                                      window_size=window_size, normalize_by_row=normalize_by_row,
+                                                      predictor_class=predictor_cls, **predictor_params)
             except Exception as e:
                 logger.error("Error in data pipeline! Skipping...")
                 logger.error(e.message)

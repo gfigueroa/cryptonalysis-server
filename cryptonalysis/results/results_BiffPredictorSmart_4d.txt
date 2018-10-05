@@ -1,0 +1,1314 @@
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 10 days, Crypto name: 'ETH', Normalize: True, Normalize by row: True
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $1095836.12
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1225288.95
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2735.0
+INFO:root:ROI: $1222553.95
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 297
+INFO:root:Sell: 250
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win10_norm_row.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 547
+INFO:root:Length X_training: 383
+INFO:root:Length X_testing: 164
+INFO:root:Length X_dev: 273
+INFO:root:Length X_eval: 274
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+D:\Dropbox\Trabajo\Cryptocurrencies\Code\CryptonalysisServer\venv\lib\site-packages\sklearn\metrics\classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       126
+          1       0.54      1.00      0.70       148
+
+avg / total       0.29      0.54      0.38       274
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+D:\Dropbox\Trabajo\Cryptocurrencies\Code\CryptonalysisServer\venv\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:564: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (200) reached and the optimization hasn't converged yet.
+  % self.max_iter, ConvergenceWarning)
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'identity', 'learning_rate': 'constant', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.40      0.37      0.38       126
+          1       0.50      0.53      0.51       148
+
+avg / total       0.45      0.46      0.45       274
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 547
+INFO:root:Length X_training: 382
+INFO:root:Length X_testing: 165
+INFO:root:Length X_dev: 273
+INFO:root:Length X_eval: 274
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       133
+          1       0.51      1.00      0.68       141
+
+avg / total       0.26      0.51      0.35       274
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 1, 'activation': 'identity', 'learning_rate': 'invscaling', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.50      0.04      0.07       133
+          1       0.52      0.96      0.67       141
+
+avg / total       0.51      0.51      0.38       274
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 10 days, Crypto name: 'ETH', Normalize: True, Normalize by row: False
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $1095836.12
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1225288.95
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2735.0
+INFO:root:ROI: $1222553.95
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 297
+INFO:root:Sell: 250
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win10_norm_col.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 547
+INFO:root:Length X_training: 383
+INFO:root:Length X_testing: 164
+INFO:root:Length X_dev: 273
+INFO:root:Length X_eval: 274
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.57      0.10      0.16       126
+          1       0.55      0.94      0.69       148
+
+avg / total       0.56      0.55      0.45       274
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 0.1, 'activation': 'identity', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.57      0.03      0.06       126
+          1       0.54      0.98      0.70       148
+
+avg / total       0.56      0.54      0.41       274
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 547
+INFO:root:Length X_training: 382
+INFO:root:Length X_testing: 165
+INFO:root:Length X_dev: 273
+INFO:root:Length X_eval: 274
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       133
+          1       0.51      1.00      0.68       141
+
+avg / total       0.26      0.51      0.35       274
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'identity', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 273).
+INFO:root:The scores are computed on the full evaluation set (size 274).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.49      1.00      0.65       133
+          1       0.00      0.00      0.00       141
+
+avg / total       0.24      0.49      0.32       274
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 20 days, Crypto name: 'ETH', Normalize: True, Normalize by row: True
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $1062299.23
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1191752.05
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2685.0
+INFO:root:ROI: $1189067.05
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 289
+INFO:root:Sell: 248
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win20_norm_row.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 537
+INFO:root:Length X_training: 376
+INFO:root:Length X_testing: 161
+INFO:root:Length X_dev: 268
+INFO:root:Length X_eval: 269
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.49      0.44      0.46       121
+          1       0.58      0.63      0.60       148
+
+avg / total       0.54      0.54      0.54       269
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 100, 'activation': 'identity', 'learning_rate': 'invscaling', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+
+
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       121
+          1       0.55      1.00      0.71       148
+
+avg / total       0.30      0.55      0.39       269
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 537
+INFO:root:Length X_training: 375
+INFO:root:Length X_testing: 162
+INFO:root:Length X_dev: 268
+INFO:root:Length X_eval: 269
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       131
+          1       0.51      1.00      0.68       138
+
+avg / total       0.26      0.51      0.35       269
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'identity', 'learning_rate': 'constant', 'hidden_layer_sizes': (20, 20, 20)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.58      0.54      0.56       131
+          1       0.59      0.63      0.61       138
+
+avg / total       0.59      0.59      0.59       269
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 20 days, Crypto name: 'ETH', Normalize: True, Normalize by row: False
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $1062299.23
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1191752.05
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2685.0
+INFO:root:ROI: $1189067.05
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 289
+INFO:root:Sell: 248
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win20_norm_col.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 537
+INFO:root:Length X_training: 376
+INFO:root:Length X_testing: 161
+INFO:root:Length X_dev: 268
+INFO:root:Length X_eval: 269
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'linear', 'C': 1000}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.60      0.31      0.41       132
+          1       0.55      0.80      0.65       137
+
+avg / total       0.57      0.56      0.53       269
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 0.1, 'activation': 'tanh', 'learning_rate': 'constant', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.62      0.30      0.41       132
+          1       0.55      0.82      0.66       137
+
+avg / total       0.58      0.57      0.53       269
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 537
+INFO:root:Length X_training: 375
+INFO:root:Length X_testing: 162
+INFO:root:Length X_dev: 268
+INFO:root:Length X_eval: 269
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'linear', 'C': 0.01}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       131
+          1       0.51      1.00      0.68       138
+
+avg / total       0.26      0.51      0.35       269
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 0.1, 'activation': 'relu', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 268).
+INFO:root:The scores are computed on the full evaluation set (size 269).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.47      0.89      0.62       131
+          1       0.36      0.06      0.10       138
+
+avg / total       0.42      0.46      0.35       269
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+
+
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 30 days, Crypto name: 'ETH', Normalize: True, Normalize by row: True
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $1013485.89
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1142938.71
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2635.0
+INFO:root:ROI: $1140303.71
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 285
+INFO:root:Sell: 242
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win30_norm_row.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 527
+INFO:root:Length X_training: 369
+INFO:root:Length X_testing: 158
+INFO:root:Length X_dev: 263
+INFO:root:Length X_eval: 264
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       120
+          1       0.55      1.00      0.71       144
+
+avg / total       0.30      0.55      0.39       264
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 10, 'activation': 'identity', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       120
+          1       0.55      1.00      0.71       144
+
+avg / total       0.30      0.55      0.39       264
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 527
+INFO:root:Length X_training: 368
+INFO:root:Length X_testing: 159
+INFO:root:Length X_dev: 263
+INFO:root:Length X_eval: 264
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       126
+          1       0.52      1.00      0.69       138
+
+avg / total       0.27      0.52      0.36       264
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 10, 'activation': 'tanh', 'learning_rate': 'constant', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       126
+          1       0.52      1.00      0.69       138
+
+avg / total       0.27      0.52      0.36       264
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 30 days, Crypto name: 'ETH', Normalize: True, Normalize by row: False
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $1013485.89
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1142938.71
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2635.0
+INFO:root:ROI: $1140303.71
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 285
+INFO:root:Sell: 242
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win30_norm_col.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 527
+INFO:root:Length X_training: 369
+INFO:root:Length X_testing: 158
+INFO:root:Length X_dev: 263
+INFO:root:Length X_eval: 264
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'linear', 'C': 10}
+
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.56      0.28      0.37       129
+          1       0.54      0.79      0.64       135
+
+avg / total       0.55      0.54      0.51       264
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 1, 'activation': 'relu', 'learning_rate': 'invscaling', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.66      0.30      0.41       129
+          1       0.56      0.85      0.68       135
+
+avg / total       0.61      0.58      0.55       264
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 527
+INFO:root:Length X_training: 368
+INFO:root:Length X_testing: 159
+INFO:root:Length X_dev: 263
+INFO:root:Length X_eval: 264
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'linear', 'C': 1000}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.51      0.75      0.61       126
+          1       0.60      0.33      0.43       138
+
+avg / total       0.55      0.53      0.51       264
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'identity', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 263).
+INFO:root:The scores are computed on the full evaluation set (size 264).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       126
+          1       0.52      1.00      0.69       138
+
+avg / total       0.27      0.52      0.36       264
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 40 days, Crypto name: 'ETH', Normalize: True, Normalize by row: True
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $953515.02
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1082967.84
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2585.0
+INFO:root:ROI: $1080382.84
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 280
+INFO:root:Sell: 237
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win40_norm_row.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 517
+INFO:root:Length X_training: 362
+INFO:root:Length X_testing: 155
+INFO:root:Length X_dev: 258
+INFO:root:Length X_eval: 259
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 100, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       1.00      0.01      0.02       130
+          1       0.50      1.00      0.67       129
+
+avg / total       0.75      0.50      0.34       259
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 0.1, 'activation': 'relu', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (20, 20, 20)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.73      0.33      0.46       130
+          1       0.56      0.88      0.69       129
+
+avg / total       0.65      0.60      0.57       259
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 517
+INFO:root:Length X_training: 361
+INFO:root:Length X_testing: 156
+INFO:root:Length X_dev: 258
+INFO:root:Length X_eval: 259
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       122
+          1       0.53      1.00      0.69       137
+
+avg / total       0.28      0.53      0.37       259
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 1, 'activation': 'tanh', 'learning_rate': 'constant', 'hidden_layer_sizes': (20, 20, 20)}
+
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.48      0.34      0.40       122
+          1       0.53      0.67      0.60       137
+
+avg / total       0.51      0.52      0.50       259
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 40 days, Crypto name: 'ETH', Normalize: True, Normalize by row: False
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $953515.02
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1082967.84
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2585.0
+INFO:root:ROI: $1080382.84
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 280
+INFO:root:Sell: 237
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win40_norm_col.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 517
+INFO:root:Length X_training: 362
+INFO:root:Length X_testing: 155
+INFO:root:Length X_dev: 258
+INFO:root:Length X_eval: 259
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.64      0.39      0.48       118
+          1       0.61      0.82      0.70       141
+
+avg / total       0.63      0.62      0.60       259
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'relu', 'learning_rate': 'invscaling', 'hidden_layer_sizes': (20, 20, 20)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.63      0.38      0.48       118
+          1       0.61      0.82      0.70       141
+
+avg / total       0.62      0.62      0.60       259
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 517
+INFO:root:Length X_training: 361
+INFO:root:Length X_testing: 156
+INFO:root:Length X_dev: 258
+INFO:root:Length X_eval: 259
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.47      0.98      0.63       122
+          1       0.00      0.00      0.00       137
+
+avg / total       0.22      0.46      0.30       259
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'tanh', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 258).
+INFO:root:The scores are computed on the full evaluation set (size 259).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.50      0.98      0.66       122
+          1       0.88      0.11      0.19       137
+
+avg / total       0.70      0.52      0.41       259
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 50 days, Crypto name: 'ETH', Normalize: True, Normalize by row: True
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $872748.69
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1002201.5
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2535.0
+INFO:root:ROI: $999666.5
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 275
+INFO:root:Sell: 232
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win50_norm_row.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 507
+INFO:root:Length X_training: 355
+INFO:root:Length X_testing: 152
+INFO:root:Length X_dev: 253
+INFO:root:Length X_eval: 254
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+INFO:root:Best parameters set found on development dataset:
+
+
+INFO:root:{'kernel': 'linear', 'C': 10}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.48      0.37      0.42       120
+          1       0.53      0.65      0.59       134
+
+avg / total       0.51      0.52      0.51       254
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 0.1, 'activation': 'relu', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.71      0.58      0.64       120
+          1       0.68      0.79      0.73       134
+
+avg / total       0.70      0.69      0.69       254
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+
+INFO:root:Length X: 507
+
+INFO:root:Length X_training: 354
+INFO:root:Length X_testing: 153
+INFO:root:Length X_dev: 253
+INFO:root:Length X_eval: 254
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       121
+          1       0.52      1.00      0.69       133
+
+avg / total       0.27      0.52      0.36       254
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'alpha': 10, 'activation': 'tanh', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       121
+          1       0.52      1.00      0.69       133
+
+avg / total       0.27      0.52      0.36       254
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 50 days, Crypto name: 'ETH', Normalize: True, Normalize by row: False
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $872748.69
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $1002201.5
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2535.0
+INFO:root:ROI: $999666.5
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 275
+INFO:root:Sell: 232
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win50_norm_col.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 507
+INFO:root:Length X_training: 355
+INFO:root:Length X_testing: 152
+INFO:root:Length X_dev: 253
+INFO:root:Length X_eval: 254
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+
+
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.59      0.42      0.49       115
+          1       0.61      0.76      0.68       139
+
+avg / total       0.60      0.61      0.59       254
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 1, 'activation': 'relu', 'learning_rate': 'invscaling', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.53      0.47      0.50       115
+          1       0.60      0.65      0.63       139
+
+avg / total       0.57      0.57      0.57       254
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 507
+INFO:root:Length X_training: 354
+INFO:root:Length X_testing: 153
+INFO:root:Length X_dev: 253
+INFO:root:Length X_eval: 254
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.47      0.99      0.64       121
+          1       0.00      0.00      0.00       133
+
+avg / total       0.23      0.47      0.31       254
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'identity', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 253).
+INFO:root:The scores are computed on the full evaluation set (size 254).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.55      0.80      0.65       121
+          1       0.69      0.40      0.50       133
+
+avg / total       0.62      0.59      0.57       254
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 60 days, Crypto name: 'ETH', Normalize: True, Normalize by row: True
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $741742.6
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $871195.41
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2485.0
+INFO:root:ROI: $868710.41
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 266
+INFO:root:Sell: 231
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win60_norm_row.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 497
+INFO:root:Length X_training: 348
+INFO:root:Length X_testing: 149
+INFO:root:Length X_dev: 248
+INFO:root:Length X_eval: 249
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+INFO:root:Best parameters set found on development dataset:
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+
+
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.53      0.51      0.52       113
+          1       0.61      0.62      0.62       136
+
+avg / total       0.57      0.57      0.57       249
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 1, 'activation': 'relu', 'learning_rate': 'invscaling', 'hidden_layer_sizes': (30, 30, 30)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.54      0.63      0.58       113
+          1       0.64      0.56      0.60       136
+
+avg / total       0.60      0.59      0.59       249
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 497
+INFO:root:Length X_training: 347
+INFO:root:Length X_testing: 150
+INFO:root:Length X_dev: 248
+INFO:root:Length X_eval: 249
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 0.01, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.00      0.00      0.00       118
+          1       0.53      1.00      0.69       131
+
+avg / total       0.28      0.53      0.36       249
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 100, 'activation': 'identity', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (20, 20, 20)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.47      1.00      0.64       118
+          1       0.00      0.00      0.00       131
+
+avg / total       0.22      0.47      0.30       249
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running preprocessing pipeline...
+INFO:root:Loading historical data...
+INFO:root:Parameters:
+Historical file: '../data\ethereum_historical.csv', Starting date: 2017-01-01, Ending date: 2018-07-14, Price column: 'Close', Window size: 60 days, Crypto name: 'ETH', Normalize: True, Normalize by row: False
+INFO:root:Aggregating data...
+INFO:root:Running predictor for BiffPredictorSmart...
+INFO:root:Starting date: 2017-01-01
+INFO:root:Finished running predictor
+INFO:root:End date: 2018-07-11 00:00:00
+INFO:root:*** Before selling all crypto ***
+INFO:root:Cash: $741742.6
+INFO:root:Owned crypto: ETH 301.0
+INFO:root:*** After selling all crypto ***
+INFO:root:Cash: $871195.41
+INFO:root:Owned crypto: ETH 0.0
+INFO:root:Total investment: $2485.0
+INFO:root:ROI: $868710.41
+INFO:root:********************
+INFO:root:Getting transactions DataFrame...
+INFO:root:Buy: 266
+INFO:root:Sell: 231
+INFO:root:Normalizing data...
+INFO:root:Saving data to file '../data\pre_BiffPredictorSmart_2017-01-01-2018-07-14_win60_norm_col.csv'
+INFO:root:Preprocessing pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: True, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 497
+INFO:root:Length X_training: 348
+INFO:root:Length X_testing: 149
+INFO:root:Length X_dev: 248
+INFO:root:Length X_eval: 249
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 100, 'gamma': 0.001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.69      0.36      0.48       113
+          1       0.62      0.87      0.72       136
+
+avg / total       0.65      0.64      0.61       249
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 0.1, 'activation': 'relu', 'learning_rate': 'adaptive', 'hidden_layer_sizes': (20, 20, 20)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.70      0.55      0.61       113
+          1       0.68      0.80      0.74       136
+
+avg / total       0.69      0.69      0.68       249
+
+INFO:root:Classification pipeline complete!
+
+INFO:root:Running classification pipeline...
+INFO:root:Parameters:
+Shuffle data: False, Training size: 0.7, Development size: 0.5
+INFO:root:Length X: 497
+INFO:root:Length X_training: 347
+INFO:root:Length X_testing: 150
+INFO:root:Length X_dev: 248
+INFO:root:Length X_eval: 249
+INFO:root:Tuning hyperparameters for SVC for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'kernel': 'rbf', 'C': 1000, 'gamma': 0.0001}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.53      0.89      0.66       118
+          1       0.75      0.29      0.42       131
+
+avg / total       0.64      0.57      0.53       249
+
+INFO:root:Tuning hyperparameters for MLPClassifier for accuracy...
+
+INFO:root:Best parameters set found on development dataset:
+
+INFO:root:{'alpha': 1, 'activation': 'relu', 'learning_rate': 'constant', 'hidden_layer_sizes': (10, 10, 10)}
+INFO:root:Detailed classification report:
+INFO:root:The model is trained on the full development set (size 248).
+INFO:root:The scores are computed on the full evaluation set (size 249).
+INFO:root:
+             precision    recall  f1-score   support
+
+          0       0.49      0.57      0.52       118
+          1       0.54      0.46      0.50       131
+
+avg / total       0.51      0.51      0.51       249
+
+INFO:root:Classification pipeline complete!
+
+
+Process finished with exit code 0
