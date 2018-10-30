@@ -1,0 +1,5 @@
+$-47.45 - BiffPredictorSmart (2018-01-01) (p_buy=0.8, p_sell=0.8)
+$-309.26 - BiffPredictorSmart (2018-01-01) (p_buy=0.8, p_sell=0.8)
+$127.46 - BiffPredictorSmart (2018-01-01) (p_buy=0.8, p_sell=0.8)
+$224.54 - BiffPredictorSmart (2018-01-01) (p_buy=0.8, p_sell=0.8)
+$446.62 - BiffPredictorSmart (2018-01-01) (p_buy=0.8, p_sell=0.8)

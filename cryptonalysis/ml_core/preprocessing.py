@@ -1,9 +1,6 @@
-import logging
 import pandas as pd
 from pandas import DataFrame
-from datetime import date
-from transaction_builders import BiffPredictor, GreedyPredictor, LazyPredictor, ProbabilityPredictor, RandomPredictor, \
-    ReverseBiffPredictor, BiffPredictorSmart, CryptoPredictor
+from transaction_builders import *
 from market import market
 from sklearn.preprocessing import StandardScaler
 import config
@@ -14,7 +11,7 @@ import os
 logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
-DATA_FOLDER = '../data'
+DATA_FOLDER = os.path.join(os.path.pardir, 'data')
 HISTORICAL_DATA_FILE = os.path.join(DATA_FOLDER, 'ethereum_historical.csv')
 
 
@@ -252,17 +249,18 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
 
 
 if __name__ == '__main__':
-    start_date = date(2017, 1, 1)
+    start_date = date(2018, 1, 1)
     predictor_cls = BiffPredictorSmart
     predictor_params = {
-        'prob_buy': 0.7,
-        'prob_sell': 0.7,
+        'prob_buy': 0.8,
+        'prob_sell': 0.8,
         'starting_investment': 100,
         'daily_allowance': 5,
         'lookahead_days': 4
     }
     save = False
-    for i in range(20):
+    preprocessed_df = None
+    for i in range(5):
         preprocessed_df = run_data_pipeline(HISTORICAL_DATA_FILE, starting_date=start_date, predictor_class=predictor_cls,
                                             save_data=save, **predictor_params)
     logger.debug(preprocessed_df.head())

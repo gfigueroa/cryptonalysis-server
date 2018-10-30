@@ -1,7 +1,6 @@
 import logging
 from datetime import date
-
-from cryptonalysis.ml_core.transaction_builders import BiffPredictorSmart, BiffPredictor
+from transaction_builders import BiffPredictorSmart
 from preprocessing import run_data_pipeline, HISTORICAL_DATA_FILE
 from sklearn import svm
 from sklearn.metrics import classification_report

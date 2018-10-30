@@ -3,10 +3,13 @@ from abc import ABCMeta, abstractmethod
 from datetime import date
 import logging
 import config
+import os
 
 # Logging
 logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
+
+DATA_FOLDER = os.path.join(os.path.pardir, 'data')
 
 
 class CryptoPredictor:
@@ -75,17 +78,55 @@ class CryptoPredictor:
             raise ValueError("prob_sell should be a decimal between 0 (inclusive) and 1 (inclusive).")
         self.prob_sell = prob_sell
 
-    @abstractmethod
-    def get_transaction(self, prices, current_price, future_prices):
-        # type: (list, float, list) -> (str, float)
+    def get_transaction_tuple(self, prices, current_price, future_prices):
         """
-        Child classes must override this method to define a way of doing a transaction based on the given
-        parameters. The method may also make use of the prob_buy and prob_sell properties to correctly return a
-        transaction based on chance.
+        Get a transaction (transaction, crypto_amount) based on the given parameters.
+        The method makes use of the prob_buy and prob_sell properties to correctly return a transaction based on chance.
         :param prices: a list of the last self._window_size prices of the given cryptocurrency
         :param current_price: the price of the cryptocurrency at the present day
         :param future_prices: a list of future prices of the cryptocurrency of size lookahead_days
         :return: a tuple of the form (transaction, amount), where transaction can be 'BUY' or 'SELL'
+        """
+
+        # Probabilities (accuracy) for back testing
+        random_draw = random.randint(0, 100)
+        keep_buy = random_draw <= int(self.prob_buy * 100)
+        random_draw = random.randint(0, 100)
+        keep_sell = random_draw <= int(self.prob_sell * 100)
+
+        transaction = self.get_transaction(prices, current_price, future_prices)
+        if transaction == 'BUY':
+            if keep_buy:
+                crypto_amount, fiat_amount = self.buy(current_price)
+            else:
+                transaction = 'SELL'
+                crypto_amount, fiat_amount = self.sell(current_price)
+        elif transaction == 'SELL':
+            if keep_sell:
+                crypto_amount, fiat_amount = self.sell(current_price)
+            else:
+                transaction = 'BUY'
+                crypto_amount, fiat_amount = self.buy(current_price)
+        else:
+            raise ValueError("get_transaction() method must return either 'BUY' or 'SELL'")
+
+        # Ignore for transactions less than or close to a minimum crypto/fiat transaction
+        if crypto_amount < self.market.min_transaction_size_crypto or \
+                round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
+            crypto_amount = 0
+
+        return transaction, crypto_amount
+
+    @abstractmethod
+    def get_transaction(self, prices, current_price, future_prices):
+        # type: (list, float, list) -> str
+        """
+        Child classes must override this method to define a way of doing a transaction based on the given
+        parameters.
+        :param prices: a list of the last self._window_size prices of the given cryptocurrency
+        :param current_price: the price of the cryptocurrency at the present day
+        :param future_prices: a list of future prices of the cryptocurrency of size lookahead_days
+        :return: a transaction that can be 'BUY' or 'SELL'
         """
         pass
 
@@ -103,6 +144,34 @@ class CryptoPredictor:
             crypto_amount = self.owned_crypto - self.owned_crypto * self.market.transaction_fee_perc
 
         return crypto_amount
+
+    def buy(self, current_price):
+        """
+        Simulates a BUY transaction given the current crypto price.
+        The strategy is to buy what you can with your current cash. This method may be overridden if different
+        strategies are to be adopted.
+        :param current_price
+        :return: a tuple (crypto_amount, fiat_amount)
+        """
+        crypto_amount = self.get_max_crypto_transaction(True, current_price)
+        fiat_amount = (crypto_amount * current_price)
+        fee = fiat_amount * self.market.transaction_fee_perc
+        fiat_amount += fee
+        return crypto_amount, fiat_amount
+
+    def sell(self, current_price):
+        """
+        Simulates a SELL transaction given the current crypto price.
+        The strategy is to sell all crypto. This method may be overridden if different
+        strategies are to be adopted.
+        :param current_price
+        :return: a tuple (crypto_amount, fiat_amount)
+        """
+        crypto_amount = self.owned_crypto
+        fiat_amount = (crypto_amount * current_price)
+        fee = fiat_amount * self.market.transaction_fee_perc
+        fiat_amount -= fee
+        return crypto_amount, fiat_amount
 
     def get_transaction_fiat_amount(self, buy, crypto_amount, current_price):
         """
@@ -180,11 +249,7 @@ class CryptoPredictor:
             lookahead_day = stop_day + self.lookahead_days - 1
             future_prices = self._price_list[stop_day:lookahead_day + 1]
             current_price = float(self._price_list[stop_day - 1])
-            transaction = self.get_transaction(time_window, current_price, future_prices)  # type: tuple
-
-            if len(transaction) < 2:
-                raise ValueError("get_transaction() method must return a tuple of the form (TRANSACTION_TYPE, " +
-                                 "CRYPTO_AMOUNT)")
+            transaction = self.get_transaction_tuple(time_window, current_price, future_prices)  # type: tuple
 
             transaction_type = transaction[0]
             crypto_amount = transaction[1]
@@ -233,8 +298,10 @@ class CryptoPredictor:
         logger.info("*" * 20)
 
         # Save ROI
-        with open('roi.txt', 'a') as f:
-            f.write(str(roi) + '\n')
+        with open(os.path.join(DATA_FOLDER, 'roi.txt'), 'a') as f:
+            line = "${} - {} ({}) (p_buy={}, p_sell={})\n".format(round(roi, 2), self.__class__.__name__,
+                                                                  self._starting_date, self.prob_buy, self.prob_sell)
+            f.write(line)
 
 
 class BiffPredictor(CryptoPredictor):
@@ -250,36 +317,16 @@ class BiffPredictor(CryptoPredictor):
         """
         Buy what you can with your cash if the last future price is higher than current price.
         Sell all if the last future price is lower than or equal to current price.
+        :param prices
+        :param current_price
+        :param future_prices
+        :return:
         """
-        logger.debug("Cash: ${0}".format(round(self.cash, 2)))
-        logger.debug("Owned crypto: {0} {1}".format(self._crypto_name, round(self.owned_crypto, 4)))
-        logger.log(logging.NOTSET, "Prices: {0}".format(prices))
-        logger.debug("Current price: ${0}".format(current_price))
-        logger.debug("Future price: ${0}".format(future_prices[-1]))
 
         if future_prices[-1] > current_price:  # Buy what you can with your cash
-            transaction = 'BUY'
-            crypto_amount = self.get_max_crypto_transaction(True, current_price)
-            fiat_amount = (crypto_amount * current_price)
-            fee = fiat_amount * self.market.transaction_fee_perc
-            fiat_amount += fee
+            return 'BUY'
         else:  # Sell ALL
-            transaction = 'SELL'
-            crypto_amount = self.owned_crypto
-            fiat_amount = (crypto_amount * current_price)
-            fee = fiat_amount * self.market.transaction_fee_perc
-            fiat_amount -= fee
-
-        logger.debug("Transaction fee: ${0}".format(round(fee, 2)))
-        logger.debug("Crypto amount: {0} {1}".format(self._crypto_name, round(crypto_amount, 4)))
-        logger.debug("Fiat amount: ${0}".format(round(fiat_amount, 2)))
-
-        # Ignore for transactions less than or close to a minimum crypto/fiat transaction
-        if crypto_amount < self.market.min_transaction_size_crypto or \
-                round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
-            crypto_amount = 0
-
-        return transaction, crypto_amount
+            return 'SELL'
 
 
 class BiffPredictorSmart(CryptoPredictor):
@@ -287,32 +334,20 @@ class BiffPredictorSmart(CryptoPredictor):
     Class BiffPredictorSmart.
     Predicts what cryptocurrency transaction to perform (buy/sell) given historical price data and looking at the future
     prices after a number of "lookahead" days.
-    The strategy is to buy what you can with your cash if the future price is higher than current price.
-    Sell all if future price is lower than or equal to current price.
+    The strategy is to buy what you can with your cash if the current price is lower than or equal to the average future
+    price.
+    Sell all if the current price is greater than the average future price.
     """
-
-    # Buy what you can with your cash
-    def buy(self, current_price):
-        transaction = 'BUY'
-        crypto_amount = self.get_max_crypto_transaction(True, current_price)
-        fiat_amount = (crypto_amount * current_price)
-        fee = fiat_amount * self.market.transaction_fee_perc
-        fiat_amount += fee
-        return transaction, crypto_amount, fiat_amount
-
-    # Sell ALL
-    def sell(self, current_price):
-        transaction = 'SELL'
-        crypto_amount = self.owned_crypto
-        fiat_amount = (crypto_amount * current_price)
-        fee = fiat_amount * self.market.transaction_fee_perc
-        fiat_amount -= fee
-        return transaction, crypto_amount, fiat_amount
 
     def get_transaction(self, prices, current_price, future_prices):
         """
-        Buy what you can with your cash if last future price is higher than current price.
-        Sell all if last future price is lower than or equal to current price.
+        Buy what you can with your cash if the current price is lower than or equal to the average future
+        price.
+        Sell all if the current price is greater than the average future price.
+        :param prices
+        :param current_price
+        :param future_prices
+        :return:
         """
 
         avg_future_price = sum(future_prices) / len(future_prices)  # Strategy 1
@@ -324,21 +359,10 @@ class BiffPredictorSmart(CryptoPredictor):
             price_differences.append(future_prices[i + 1] - future_prices[i])
         s = sum(price_differences)
 
-        random_draw = random.randint(0, 100)
-        keep_buy = random_draw <= int(self.prob_buy * 100)
-        random_draw = random.randint(0, 100)
-        keep_sell = random_draw <= int(self.prob_sell * 100)
         if current_price <= avg_future_price:
-            transaction, crypto_amount, fiat_amount = self.buy(current_price) if keep_buy else self.sell(current_price)
+            return 'BUY'
         else:
-            transaction, crypto_amount, fiat_amount = self.sell(current_price) if keep_sell else self.buy(current_price)
-
-        # Ignore for transactions less than or close to a minimum crypto/fiat transaction
-        if crypto_amount < self.market.min_transaction_size_crypto or \
-                round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
-            crypto_amount = 0
-
-        return transaction, crypto_amount
+            return 'SELL'
 
 
 class ReverseBiffPredictor(CryptoPredictor):
@@ -356,24 +380,9 @@ class ReverseBiffPredictor(CryptoPredictor):
         Sell all if last future price is higher than current price.
         """
         if future_prices[-1] <= current_price:  # Buy what you can with your cash
-            transaction = 'BUY'
-            crypto_amount = (self.cash / current_price) - (self.cash / current_price) * self.market.transaction_fee_perc
-            fiat_amount = (crypto_amount * current_price)
-            fee = fiat_amount * self.market.transaction_fee_perc
-            fiat_amount += fee
+            return 'BUY'
         else:  # Sell ALL
-            transaction = 'SELL'
-            crypto_amount = self.owned_crypto
-            fiat_amount = (crypto_amount * current_price)
-            fee = fiat_amount * self.market.transaction_fee_perc
-            fiat_amount -= fee
-
-        # Ignore for transactions less than or close to a minimum crypto/fiat transaction
-        if crypto_amount < self.market.min_transaction_size_crypto or \
-                round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
-            crypto_amount = 0
-
-        return transaction, crypto_amount
+            return 'SELL'
 
 
 class LazyPredictor(CryptoPredictor):
@@ -382,13 +391,22 @@ class LazyPredictor(CryptoPredictor):
     Don't do anything. Just wait to see if you get rich by lying on your sofa.
     """
 
+    def buy(self, current_price):
+        crypto_amount = 0
+        fiat_amount = 0
+        return crypto_amount, fiat_amount
+
+    def sell(self, current_price):
+        crypto_amount = 0
+        fiat_amount = 0
+        return crypto_amount, fiat_amount
+
     def get_transaction(self, prices, current_price, future_prices):
         """
         I'm a lazy fuck, I don't do anything...ever.
         """
         transaction = 'BUY'
-        crypto_amount = 0
-        return transaction, crypto_amount
+        return transaction
 
 
 class RandomPredictor(CryptoPredictor):
@@ -403,26 +421,9 @@ class RandomPredictor(CryptoPredictor):
         """
         transaction_no = random.randint(0, 1)
         if transaction_no == 0:
-            transaction = 'BUY'
-            crypto_amount = (self.cash / current_price) - (self.cash / current_price) * self.market.transaction_fee_perc
-            fiat_amount = (crypto_amount * current_price)
-            fee = fiat_amount * self.market.transaction_fee_perc
-            fiat_amount += fee
+            return 'BUY'
         else:
-            transaction = 'SELL'
-            crypto_amount = self.owned_crypto
-            fiat_amount = (crypto_amount * current_price)
-            fee = fiat_amount * self.market.transaction_fee_perc
-            fiat_amount -= fee
-
-        logger.debug("Transaction fee: ${0}".format(fee))
-
-        # Ignore for transactions less than or close to a minimum crypto/fiat transaction
-        if crypto_amount < self.market.min_transaction_size_crypto or \
-                round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
-            crypto_amount = 0
-
-        return transaction, crypto_amount
+            return 'SELL'
 
 
 class GreedyPredictor(CryptoPredictor):
@@ -436,103 +437,4 @@ class GreedyPredictor(CryptoPredictor):
         Buy what you can with your cash all the time.
         """
         transaction = 'BUY'
-        crypto_amount = (self.cash / current_price) - (self.cash / current_price) * self.market.transaction_fee_perc
-        fiat_amount = (crypto_amount * current_price)
-        fee = fiat_amount * self.market.transaction_fee_perc
-        fiat_amount += fee
-
-        logger.debug("Transaction fee: ${0}".format(fee))
-
-        # Ignore for transactions less than or close to a minimum crypto/fiat transaction
-        if crypto_amount < self.market.min_transaction_size_crypto or \
-                round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
-            crypto_amount = 0
-
-        return transaction, crypto_amount
-
-
-class ProbabilityPredictor(CryptoPredictor):
-    """
-    Class ProbabilityPredictor.
-    Predict 'BUY' or 'SELL' based on a probability for each transaction type.
-    For instance, if prob_buy = 0.4 and prob_sell = 0.7, then the predictor has a 40% chance of correctly guessing when
-    to buy, and a 70% chance of correctly guessing when to sell, using the BiffPredictor buy/sell strategy.
-    """
-
-    def __init__(self, market, starting_date, price_list, window_size, crypto_name, ending_date=None,
-                 starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=1, prob_sell=1):
-        """
-        ProbabilityPredictor constructor. The parameters are the same as those in CryptoPredictor with the exception of
-        prob_buy and prob_sell, which indicate the random probability [0-1] that the transaction will be 'BUY' when it
-        needs to buy and 'SELL' when it needs to sell. The rules for buying or selling are the same as the
-        BiffPredictor.
-        :param market: An instance of global market parameters
-        :param starting_date: The date from which to start making transactions
-        :param price_list: The list of all crypto prices to use for making transactions from the starting date
-        :param window_size: The window size to use for making transactions
-        :param crypto_name: The cryptocurrency 3-character code (e.g., BTC, ETH, etc.)
-        :param ending_date: The date in which to stop making transactions (default is today)
-        :param starting_investment: The starting investment in fiat
-        :param daily_allowance: The daily amount of money (in fiat) that can be invested in making transactions
-        :param lookahead_days: The number of days to look ahead when making a transaction
-        :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
-        when it actually has to buy, based on BiffPredictor rules.
-        :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
-        when it actually has to sell, based on BiffPredictor rules.
-        """
-        super(ProbabilityPredictor, self).__init__(market, starting_date, price_list, window_size, crypto_name,
-                                                   ending_date, starting_investment, daily_allowance, lookahead_days)
-
-        if prob_buy < 0 or prob_buy > 1:
-            raise ValueError("prob_buy should be a decimal between 0 (inclusive) and 1 (inclusive).")
-
-        if prob_sell < 0 or prob_sell > 1:
-            raise ValueError("prob_sell should be a decimal between 0 (inclusive) and 1 (inclusive).")
-
-        self._prob_buy = prob_buy
-        self._prob_sell = prob_sell
-
-    def get_transaction(self, prices, current_price, future_prices):
-        """
-        Get a transaction based on luck (accuracies for BUY and SELL) given prob_buy and prob_sell and BiffPredictor's
-        strategy:
-        Buy what you can with your cash if last future price is higher than current price.
-        Sell all if last future price is lower than or equal to current price.
-        """
-
-        random_draw = random.randint(0, 100)
-        if future_prices[-1] > current_price:  # Buy what you can with your cash
-            keep = random_draw <= int(self._prob_buy * 100)
-            if keep:
-                transaction = 'BUY'
-                crypto_amount = self.get_max_crypto_transaction(True, current_price)
-                fiat_amount = (crypto_amount * current_price)
-                fee = fiat_amount * self.market.transaction_fee_perc
-                fiat_amount += fee
-            else:
-                transaction = 'SELL'
-                crypto_amount = self.owned_crypto
-                fiat_amount = (crypto_amount * current_price)
-                fee = fiat_amount * self.market.transaction_fee_perc
-                fiat_amount -= fee
-        else:  # Sell ALL
-            keep = random_draw <= int(self._prob_sell * 100)
-            if keep:
-                transaction = 'SELL'
-                crypto_amount = self.owned_crypto
-                fiat_amount = (crypto_amount * current_price)
-                fee = fiat_amount * self.market.transaction_fee_perc
-                fiat_amount -= fee
-            else:
-                transaction = 'BUY'
-                crypto_amount = self.get_max_crypto_transaction(True, current_price)
-                fiat_amount = (crypto_amount * current_price)
-                fee = fiat_amount * self.market.transaction_fee_perc
-                fiat_amount += fee
-
-        # Ignore for transactions less than or close to a minimum crypto/fiat transaction
-        if crypto_amount < self.market.min_transaction_size_crypto or \
-                round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
-            crypto_amount = 0
-
-        return transaction, crypto_amount
+        return transaction
