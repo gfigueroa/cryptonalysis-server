@@ -23,7 +23,7 @@ if __name__ == '__main__':
         'lookahead_days': 4
     }
     data_pipeline_parameters = {
-        'window_size': [60],
+        'window_size': [20],
         'normalize_by_row': [True]
     }
     # Grid search classification pipeline parameters

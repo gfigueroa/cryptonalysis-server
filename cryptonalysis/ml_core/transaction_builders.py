@@ -9,6 +9,7 @@ import os
 logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
+SAVE_ROI = False
 DATA_FOLDER = os.path.join(os.path.pardir, 'data')
 
 
@@ -298,10 +299,12 @@ class CryptoPredictor:
         logger.info("*" * 20)
 
         # Save ROI
-        with open(os.path.join(DATA_FOLDER, 'roi.txt'), 'a') as f:
-            line = "${} - {} ({}) (p_buy={}, p_sell={})\n".format(round(roi, 2), self.__class__.__name__,
-                                                                  self._starting_date, self.prob_buy, self.prob_sell)
-            f.write(line)
+        if SAVE_ROI:
+            with open(os.path.join(DATA_FOLDER, 'roi.txt'), 'a') as f:
+                line = "${} - {} ({}) (p_buy={}, p_sell={})\n".format(round(roi, 2), self.__class__.__name__,
+                                                                      self._starting_date, self.prob_buy,
+                                                                      self.prob_sell)
+                f.write(line)
 
 
 class BiffPredictor(CryptoPredictor):
@@ -350,9 +353,11 @@ class BiffPredictorSmart(CryptoPredictor):
         :return:
         """
 
-        avg_future_price = sum(future_prices) / len(future_prices)  # Strategy 1
+        # Strategy 1
+        avg_future_price = sum(future_prices) / len(future_prices)
 
-        future_prices = list(future_prices)  # Strategy 2
+        # Strategy 2
+        future_prices = list(future_prices)
         future_prices.insert(0, current_price)
         price_differences = []
         for i in range(0, len(future_prices) - 1):
