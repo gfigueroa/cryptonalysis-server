@@ -287,10 +287,11 @@ if __name__ == '__main__':
     # random seed for reproducibility
     np.random.seed(202)
 
-    sys.setrecursionlimit(100000)
-    threading.stack_size(200000000)
-    thread = threading.Thread(target=run_deep_learning)
-    thread.start()
+    #sys.setrecursionlimit(100000)
+    #threading.stack_size(200000000)
+    #thread = threading.Thread(target=run_deep_learning)
+    #thread.start()
+    run_deep_learning()
 
     # run_classic_classification()
     # run_deep_learning()
