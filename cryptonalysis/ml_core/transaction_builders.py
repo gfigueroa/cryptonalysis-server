@@ -2,18 +2,15 @@ import random
 from abc import ABCMeta, abstractmethod
 from datetime import date
 import logging
-import config
 import os
 
 # Logging
-logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
-SAVE_ROI = False
-DATA_FOLDER = os.path.join(os.path.pardir, 'data')
+DUMP_DIR = os.path.join(os.path.pardir, 'dump')
 
 
-class CryptoPredictor:
+class CryptoPredictor(object):
     """
     Abstract class CryptoPredictor.
     Predicts what cryptocurrency transaction to perform (buy/sell)
@@ -28,9 +25,11 @@ class CryptoPredictor:
     STARTING_INVESTMENT = 100.0  # USD
     DAILY_ALLOWANCE = 5.0
     LOOKAHEAD_DAYS = 1
+    PROB_BUY = 1
+    PROB_SELL = 1
 
     def __init__(self, market, starting_date, price_list, window_size, crypto_name, ending_date=None,
-                 starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=1, prob_sell=1):
+                 starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None):
         """
         CryptoPredictor constructor.
         :param market: An instance of global market parameters
@@ -71,13 +70,13 @@ class CryptoPredictor:
         self.lookahead_days = lookahead_days or CryptoPredictor.LOOKAHEAD_DAYS
 
         # Probabilities (prediction accuracy)
-        if prob_buy < 0 or prob_buy > 1:
+        self.prob_buy = prob_buy or CryptoPredictor.PROB_BUY
+        if self.prob_buy < 0 or self.prob_buy > 1:
             raise ValueError("prob_buy should be a decimal between 0 (inclusive) and 1 (inclusive).")
-        self.prob_buy = prob_buy
 
-        if prob_sell < 0 or prob_sell > 1:
+        self.prob_sell = prob_sell or CryptoPredictor.PROB_SELL
+        if self.prob_sell < 0 or self.prob_sell > 1:
             raise ValueError("prob_sell should be a decimal between 0 (inclusive) and 1 (inclusive).")
-        self.prob_sell = prob_sell
 
     def get_transaction_tuple(self, prices, current_price, future_prices):
         """
@@ -218,9 +217,11 @@ class CryptoPredictor:
             "{0} - {1} {2} (${3})".format('BUY' if buy else 'SELL', self._crypto_name, round(crypto_amount, 4),
                                           round(fiat_amount, 2)))
 
-    def run_predictor(self):
+    def run_predictor(self, save_roi=False):
         """
         Run the predictor, which will calculate cash and crypto amounts daily based on the transaction strategy.
+        :param save_roi: Whether or not to save the ROI of this predictor run in a file
+        :type save_roi: bool
         :return: a list of dictionaries with prices (training attributes) and transaction (class buy/sell)
         Example: [{[price1, price2, price3, ...], transaction: 'BUY'}, ...]
         """
@@ -234,7 +235,10 @@ class CryptoPredictor:
         # Start trading
         logger.info("Running predictor for {0}...".format(self.__class__.__name__))
         logger.info("Predictor parameters:\nStarting investment: ${0}, Daily allowance: ${1}, "
-                    "Lookahead days: {2}".format(self.starting_investment, self.daily_allowance, self.lookahead_days))
+                    "Lookahead days: {2}, Prob buy: {3}, Prob sell: {4}".format(self.starting_investment,
+                                                                                self.daily_allowance,
+                                                                                self.lookahead_days,
+                                                                                self.prob_buy, self.prob_sell))
         logger.info("Start date: {0}".format(self._starting_date))
 
         # First crypto purchase
@@ -272,13 +276,15 @@ class CryptoPredictor:
 
         logger.info("Finished running predictor")
         logger.info("End date: {0}".format(self._price_list.index[stop_day]))
-        self._sell_all_crypto(current_price)  # Sell everything
+        self._sell_all_crypto(current_price, save_roi)  # Sell everything
 
         return self.transactions
 
-    def _sell_all_crypto(self, current_price):
+    def _sell_all_crypto(self, current_price, save_roi):
         """
         Sell all crypto in wallet given the current price.
+        :param save_roi: Whether or not to save the ROI of this predictor run in a file
+        :type save_roi: bool
         :param current_price: The current price (in fiat) of the crypto
         """
 
@@ -299,11 +305,12 @@ class CryptoPredictor:
         logger.info("*" * 20)
 
         # Save ROI
-        if SAVE_ROI:
-            with open(os.path.join(DATA_FOLDER, 'roi.txt'), 'a') as f:
-                line = "${} - {} ({}) (p_buy={}, p_sell={})\n".format(round(roi, 2), self.__class__.__name__,
-                                                                      self._starting_date, self.prob_buy,
-                                                                      self.prob_sell)
+        if save_roi:
+            with open(os.path.join(DUMP_DIR, 'roi.txt'), 'a') as f:
+                line = "({}) ${} - {} ({} - {}) (p_buy={}, p_sell={})\n".format(self._crypto_name, round(roi, 2),
+                                                                                self.__class__.__name__,
+                                                                                self._starting_date, self.ending_date,
+                                                                                self.prob_buy, self.prob_sell)
                 f.write(line)
 
 
@@ -443,3 +450,27 @@ class GreedyPredictor(CryptoPredictor):
         """
         transaction = 'BUY'
         return transaction
+
+
+def get_predictor_class_from_name(predictor_cls_name):
+    """
+    Get a CryptoPredictor subclass given a class name.
+    :param predictor_cls_name
+    :type predictor_cls_name: str
+    :return: A class object belonging to the required predictor class
+    :rtype: type
+    """
+    if predictor_cls_name == 'BiffPredictor':
+        return BiffPredictor
+    elif predictor_cls_name == 'BiffPredictorSmart':
+        return BiffPredictorSmart
+    elif predictor_cls_name == 'ReverseBiffPredictor':
+        return ReverseBiffPredictor
+    elif predictor_cls_name == 'LazyPredictor':
+        return LazyPredictor
+    elif predictor_cls_name == 'RandomPredictor':
+        return RandomPredictor
+    elif predictor_cls_name == 'GreedyPredictor':
+        return GreedyPredictor
+    else:
+        raise TypeError("CryptoPredictor subclass '{}' does not exist.".format(predictor_cls_name))

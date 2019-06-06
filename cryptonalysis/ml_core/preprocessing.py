@@ -3,26 +3,21 @@ from pandas import DataFrame
 from transaction_builders import *
 from market import market
 from sklearn.preprocessing import StandardScaler
-import config
+from config import load_config, PreprocessingConfig
 import os
 
 
 # Logging
-logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
-CRYPTO_CURRENCIES = {
+# Constants
+MASTER_DATA_DIR = os.path.join(os.path.pardir, 'master_data')
+CRYPTOCURRENCIES = {
     'ETH': "ethereum",
     'BTC': "bitcoin",
     'XRP': "ripple",
     'LTC': "litecoin",
     'USDT': "tether"
-}
-DATA_FOLDER = os.path.join(os.path.pardir, 'data')
-HISTORICAL_DATA_FILE = os.path.join(DATA_FOLDER, 'ethereum_historical.csv')
-HISTORICAL_DATA_FILES = {
-    key: os.path.join(DATA_FOLDER, "{}_historical.csv".format(value))
-    for (key, value) in CRYPTO_CURRENCIES.iteritems()
 }
 
 
@@ -54,17 +49,18 @@ def get_historical_df(historical_file):
 
 
 def get_aggregated_dfs(historical_df):
-    # type: (pd.DataFrame) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame)
     """
     Get time aggregated (daily, weekly, and monthly) DataFrames from historical DF.
     :param historical_df: The historical DF to aggregate
+    :type historical_df: DataFrame
     :return: a tuple of the form (DataFrame, DataFrame, DataFrame), containing a daily DF, weekly DF, and monthly DF,
     respectively.
+    :rtype: (DataFrame, DataFrame, DataFrame)
     """
 
     logger.info("Aggregating data...")
 
-    df = historical_df.copy(deep=True)
+    df = historical_df.copy(deep=True)  # type: DataFrame
     df.insert(1, 'Week', pd.PeriodIndex(df.Date, freq='W'))
     df.insert(2, 'Month', pd.PeriodIndex(df.Date, freq='M'))
 
@@ -131,7 +127,7 @@ def normalize_df(df, by_row):
 
 
 def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
-                      normalize_by_row):
+                      normalize_by_row, prob_buy, prob_sell):
     """
     Get the path and filename used for the data file containing the preprocessed data based on the preprocessing
     parameters.
@@ -142,7 +138,7 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     :param crypto_name
     :type crypto_name: str
     :param predictor_class: The class used to build transactions (default is BiffPredictor)
-    :type predictor_class: ``classobj``
+    :type predictor_class: type
     :param lookahead_days: The number of lookahead days used by the predictor_class
     :param starting_date: The date from which the data pipeline began (inclusive)
     :param ending_date: The date in which the data pipeline ended
@@ -150,32 +146,46 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     :param normalize: Whether or not the data was normalized
     :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
     (default is False)
+    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
+    when it actually has to buy.
+    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
+    when it actually has to sell.
     """
     norm_string = '_norm_{0}'.format('row' if normalize_by_row else 'col') if normalize else ''
-    filename = 'pre_{0}_{1}({2})_{3}-{4}_win{5}{6}.csv'.format(crypto_name, predictor_class.__name__, lookahead_days,
-                                                               starting_date, ending_date, window_size, norm_string)
-    file_path = os.path.join(DATA_FOLDER, filename)
+    filename = 'pre_{0}_{1}({2})_{3}-{4}_win{5}{6}_b{7}s{8}.csv'.format(crypto_name, predictor_class.__name__,
+                                                                        lookahead_days, starting_date, ending_date,
+                                                                        window_size, norm_string, prob_buy, prob_sell)
+    file_path = os.path.join(MASTER_DATA_DIR, filename)
     return file_path
 
 
 def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
-                   normalize_by_row):
+                   normalize_by_row, prob_buy, prob_sell):
     """
     Load the DataFrame (if saved) as a CSV containing data ready for the classification task.
     :param crypto_name
     :type crypto_name: str
     :param predictor_class: The class used to build transactions (default is BiffPredictor)
-    :type predictor_class: ``classobj``
+    :type predictor_class: type
     :param lookahead_days: The number of lookahead days used by the predictor_class
     :param starting_date: The date from which the data pipeline began (inclusive)
     :param ending_date: The date in which the data pipeline ended
     :param window_size: The size of the price window (in days) used in the transaction prediction
     :param normalize: Whether or not the data was normalized
     :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
+    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
+    when it actually has to buy.
+    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
+    when it actually has to sell.
+    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
+    when it actually has to buy.
+    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
+    when it actually has to sell.
     :return:
     """
     preprocessed_data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date,
-                                                   ending_date, window_size, normalize, normalize_by_row)
+                                                   ending_date, window_size, normalize, normalize_by_row, prob_buy,
+                                                   prob_sell)
     if os.path.isfile(preprocessed_data_filename):
         logger.info("Preprocessed datafile '{0}'' already exists. "
                     "Loading file and skipping preprocessing pipeline...".format(preprocessed_data_filename))
@@ -186,14 +196,14 @@ def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, 
 
 
 def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                   window_size, normalize, normalize_by_row):
+                   window_size, normalize, normalize_by_row, prob_buy, prob_sell):
     """
     Save the DataFrame containing data ready for the classification task as a CSV file.
     :param crypto_name
     :type crypto_name: str
     :param transactions_df: The DataFrame containing the actual preprocessed data
     :param predictor_class: The class used to build transactions (default is BiffPredictor)
-    :type predictor_class: ``classobj``
+    :type predictor_class: type
     :param lookahead_days: The number of lookahead days used by the predictor_class
     :param starting_date: The date from which the data pipeline began (inclusive)
     :param ending_date: The date in which the data pipeline ended
@@ -201,33 +211,31 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
     :param normalize: Whether or not the data was normalized
     :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
     (default is False)
+    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
+    when it actually has to buy.
+    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
+    when it actually has to sell.
     """
 
     data_file_path = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                                       window_size, normalize, normalize_by_row)
+                                       window_size, normalize, normalize_by_row, prob_buy, prob_sell)
     logger.info("Saving data to file '{0}'".format(data_file_path))
     transactions_df.to_csv(data_file_path, index=False)
 
 
-def run_data_pipeline(historical_file, starting_date=None, ending_date=None, price_column='Close',
-                      predictor_class=BiffPredictor, window_size=30, crypto_name='ETH', normalize=True,
-                      normalize_by_row=False, save_data=True, **kwargs):
+def run_data_pipeline(crypto_name, preprocessing_config, window_size=30, normalize=True, normalize_by_row=False,
+                      **kwargs):
     """
     Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for the classification
     task.
-    :param historical_file: The file path containing the historical data
-    :param starting_date: The date from which the data pipeline will begin (inclusive) (default is 01/01/2017)
-    :param ending_date: The date in which the data pipeline will end (non-inclusive) (default is today)
-    :param price_column: The name of the column containing the crypto price (default is 'Close')
-    :param predictor_class: The CryptoPredictor subclass used to build transactions (default is BiffPredictor)
-    :type predictor_class: ``classobj``
-    :param window_size: The size of the price window (in days) to use in the transaction prediction (default is 30)
     :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.) (default is 'ETH')
     :type crypto_name: str
+    :param preprocessing_config: The preprocessing configuration object
+    :type preprocessing_config: PreprocessingConfig
+    :param window_size: The size of the price window (in days) to use in the transaction prediction (default is 30)
     :param normalize: Whether or not the data should be normalized (default is True)
     :param normalize_by_row: Whether or not the data should be normalized by row or column (ignored if normalize=False)
     (default is False)
-    :param save_data: Whether or not to save the DataFrame containing the data for classification as a csv file
     :param kwargs: Dictionary of parameters used by the predictor_class (e.g. ProbabilityPredictor's  'prob_buy' and
     'prob_sell' parameters).
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
@@ -235,28 +243,30 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
 
     logger.info("Running preprocessing pipeline...")
 
-    # Get runtime parameters
-    starting_date = starting_date or date(2017, 1, 1)  # First date for ETH is 2015 8 7
+    historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
 
+    # Get runtime parameters
+    starting_date = preprocessing_config.start_date  # First date for ETH is 2015 8 7
+    ending_date = preprocessing_config.end_date
+
+    # Predictor parameters
     lookahead_days = kwargs['lookahead_days'] if 'lookahead_days' in kwargs else CryptoPredictor.LOOKAHEAD_DAYS
     starting_investment = kwargs['starting_investment'] if 'starting_investment' in kwargs else None
     daily_allowance = kwargs['daily_allowance'] if 'daily_allowance' in kwargs else None
-    prob_buy = kwargs['prob_buy'] if 'prob_buy' in kwargs else 1
-    prob_sell = kwargs['prob_sell'] if 'prob_sell' in kwargs else 1
+    prob_buy = kwargs['prob_buy'] if 'prob_buy' in kwargs else CryptoPredictor.PROB_BUY
+    prob_sell = kwargs['prob_sell'] if 'prob_sell' in kwargs else CryptoPredictor.PROB_SELL
 
     # 0. Get DF
     df = get_historical_df(historical_file)
-    if not ending_date:
-        ending_date = df['Date'].dt.date.iat[-1]
 
     logger.info("Parameters:\nHistorical file: '{0}', Start: {1}, End: {2}, Price col.: '{3}', "
                 "Window size: {4} days, Crypto: '{5}', Norm.: {6}, Norm. by row: {7}".format(
-                    historical_file, starting_date, ending_date, price_column, window_size, crypto_name, normalize,
-                    normalize_by_row))
+                    historical_file, starting_date, ending_date, preprocessing_config.price_column, window_size,
+                    crypto_name, normalize, normalize_by_row))
 
     # 1. Load preprocessed data file if it exists
-    transactions_df = load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                                     window_size, normalize, normalize_by_row)
+    transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
+                                     ending_date, window_size, normalize, normalize_by_row, prob_buy, prob_sell)
     if transactions_df is not None:
         return transactions_df
 
@@ -264,13 +274,14 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
     daily_df, weekly_df, monthly_df = get_aggregated_dfs(df)
 
     # 3. Get transaction data
-    price_list = daily_df[price_column]
+    price_list = daily_df[preprocessing_config.price_column]
 
     # 4. Run transaction builder
-    predictor = predictor_class(market, starting_date, price_list, window_size, crypto_name, ending_date,
-                                starting_investment=starting_investment, daily_allowance=daily_allowance,
-                                lookahead_days=lookahead_days, prob_buy=prob_buy, prob_sell=prob_sell)
-    predictor.run_predictor()
+    predictor = \
+        preprocessing_config.predictor_cls(market, starting_date, price_list, window_size, crypto_name, ending_date,
+                                           starting_investment=starting_investment, daily_allowance=daily_allowance,
+                                           lookahead_days=lookahead_days, prob_buy=prob_buy, prob_sell=prob_sell)
+    predictor.run_predictor(preprocessing_config.save_roi)
 
     # 5. Get transactions DataFrame
     transactions_df = build_transactions_df(predictor.transactions)
@@ -283,9 +294,9 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
         transactions_df = normalize_df(transactions_df, normalize_by_row)
 
     # 7. Save data
-    if save_data:
-        save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                       window_size, normalize, normalize_by_row)
+    if preprocessing_config.save_data:
+        save_data_file(transactions_df, crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
+                       ending_date, window_size, normalize, normalize_by_row, prob_buy, prob_sell)
 
     logger.info("Preprocessing pipeline complete!\n")
 
@@ -293,18 +304,12 @@ def run_data_pipeline(historical_file, starting_date=None, ending_date=None, pri
 
 
 if __name__ == '__main__':
-    start_date = date(2018, 1, 1)
-    predictor_cls = BiffPredictorSmart
-    predictor_params = {
-        'prob_buy': 0.8,
-        'prob_sell': 0.8,
-        'starting_investment': 100,
-        'daily_allowance': 5,
-        'lookahead_days': 4
-    }
-    save = False
+    RUNS = 5  # Number of runs for ROI stats
+    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
+    cryptonalysis_config = load_config(config_path)
+
     preprocessed_df = None
-    for i in range(5):
-        preprocessed_df = run_data_pipeline(HISTORICAL_DATA_FILE, starting_date=start_date,
-                                            predictor_class=predictor_cls, save_data=save, **predictor_params)
+    for i in range(RUNS):
+        preprocessed_df = run_data_pipeline(cryptonalysis_config.crypto, cryptonalysis_config.preprocessing_config,
+                                            **cryptonalysis_config.preprocessing_config.predictor_params)
     logger.debug(preprocessed_df.head())

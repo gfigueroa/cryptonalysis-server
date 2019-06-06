@@ -2,7 +2,7 @@ import logging
 from datetime import date
 from transaction_builders import BiffPredictorSmart
 from preprocessing import run_data_pipeline, HISTORICAL_DATA_FILE
-from classification import run_classification_pipeline
+from training import run_classification_pipeline
 import config
 
 

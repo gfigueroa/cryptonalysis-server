@@ -72,6 +72,7 @@ pip==9.0.1
 ply==3.10
 prompt-toolkit==1.0.14
 psycopg2==2.7.4
+pyhocon==0.3.35
 Pygments==2.2.0
 pyparsing==2.2.0
 python-dateutil==2.6.1
