@@ -223,19 +223,14 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
     transactions_df.to_csv(data_file_path, index=False)
 
 
-def run_data_pipeline(crypto_name, preprocessing_config, window_size=30, normalize=True, normalize_by_row=False,
-                      **kwargs):
+def run_data_pipeline(crypto_name, preprocessing_config, **kwargs):
     """
     Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for the classification
     task.
-    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.) (default is 'ETH')
+    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
     :type crypto_name: str
     :param preprocessing_config: The preprocessing configuration object
     :type preprocessing_config: PreprocessingConfig
-    :param window_size: The size of the price window (in days) to use in the transaction prediction (default is 30)
-    :param normalize: Whether or not the data should be normalized (default is True)
-    :param normalize_by_row: Whether or not the data should be normalized by row or column (ignored if normalize=False)
-    (default is False)
     :param kwargs: Dictionary of parameters used by the predictor_class (e.g. ProbabilityPredictor's  'prob_buy' and
     'prob_sell' parameters).
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
@@ -261,12 +256,14 @@ def run_data_pipeline(crypto_name, preprocessing_config, window_size=30, normali
 
     logger.info("Parameters:\nHistorical file: '{0}', Start: {1}, End: {2}, Price col.: '{3}', "
                 "Window size: {4} days, Crypto: '{5}', Norm.: {6}, Norm. by row: {7}".format(
-                    historical_file, starting_date, ending_date, preprocessing_config.price_column, window_size,
-                    crypto_name, normalize, normalize_by_row))
+                    historical_file, starting_date, ending_date, preprocessing_config.price_column,
+                    preprocessing_config.window_size, crypto_name, preprocessing_config.normalize,
+                    preprocessing_config.normalize_by_row))
 
     # 1. Load preprocessed data file if it exists
     transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
-                                     ending_date, window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+                                     ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
+                                     preprocessing_config.normalize_by_row, prob_buy, prob_sell)
     if transactions_df is not None:
         return transactions_df
 
@@ -278,9 +275,10 @@ def run_data_pipeline(crypto_name, preprocessing_config, window_size=30, normali
 
     # 4. Run transaction builder
     predictor = \
-        preprocessing_config.predictor_cls(market, starting_date, price_list, window_size, crypto_name, ending_date,
-                                           starting_investment=starting_investment, daily_allowance=daily_allowance,
-                                           lookahead_days=lookahead_days, prob_buy=prob_buy, prob_sell=prob_sell)
+        preprocessing_config.predictor_cls(market, starting_date, price_list, preprocessing_config.window_size,
+                                           crypto_name, ending_date, starting_investment=starting_investment,
+                                           daily_allowance=daily_allowance, lookahead_days=lookahead_days,
+                                           prob_buy=prob_buy, prob_sell=prob_sell)
     predictor.run_predictor(preprocessing_config.save_roi)
 
     # 5. Get transactions DataFrame
@@ -290,13 +288,14 @@ def run_data_pipeline(crypto_name, preprocessing_config, window_size=30, normali
     logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == 0])))
 
     # 6. Data normalization
-    if normalize:
-        transactions_df = normalize_df(transactions_df, normalize_by_row)
+    if preprocessing_config.normalize:
+        transactions_df = normalize_df(transactions_df, preprocessing_config.normalize_by_row)
 
     # 7. Save data
     if preprocessing_config.save_data:
         save_data_file(transactions_df, crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
-                       ending_date, window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+                       ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
+                       preprocessing_config.normalize_by_row, prob_buy, prob_sell)
 
     logger.info("Preprocessing pipeline complete!\n")
 

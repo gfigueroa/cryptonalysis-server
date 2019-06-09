@@ -12,13 +12,20 @@ from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_
 
 
 class PreprocessingConfig(object):
-    def __init__(self, start_date, end_date, price_column, save_roi, save_data, predictor_cls, predictor_params):
+    def __init__(self, start_date, end_date, window_size, normalize, normalize_by_row, price_column, save_roi,
+                 save_data, predictor_cls, predictor_params):
         """
         Initialize PreprocessingConfig object.
         :param start_date
         :type start_date: date
         :param end_date
         :type end_date: date
+        :param window_size
+        :type window_size: int
+        :param normalize
+        :type normalize: bool
+        :param normalize_by_row
+        :type normalize_by_row: bool
         :param price_column
         :type price_column: str
         :param save_roi
@@ -32,6 +39,9 @@ class PreprocessingConfig(object):
         """
         self.start_date = start_date
         self.end_date = end_date
+        self.window_size = window_size
+        self.normalize = normalize
+        self.normalize_by_row = normalize_by_row
         self.price_column = price_column
         self.save_roi = save_roi
         self.save_data = save_data
@@ -92,6 +102,9 @@ def load_config(config_path):
         preprocessing_config=PreprocessingConfig(
             start_date=start_date,
             end_date=end_date,
+            window_size=config['preprocessing']['window_size'],
+            normalize=config['preprocessing']['normalize'],
+            normalize_by_row=config['preprocessing']['normalize_by_row'],
             price_column=config['preprocessing']['price_column'],
             save_roi=config['preprocessing']['save_roi'],
             save_data=config['preprocessing']['save_data'],

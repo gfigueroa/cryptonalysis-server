@@ -162,7 +162,18 @@ def run_classification_pipeline(preprocessed_df, shuffle_data=True, training_siz
     logger.info("Classification pipeline complete!\n")
 
 
-def run_classic_classification():
+def run_classic_training(crypto_name, training_config):
+    """
+    Run classic training using grid search hyperparameter optimization.
+    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
+    :type crypto_name: str
+    :param training_config: The training configuration object
+    :type training_config: TrainingConfig
+    :param kwargs: Dictionary of parameters used by the predictor_class (e.g. ProbabilityPredictor's  'prob_buy' and
+    'prob_sell' parameters).
+    :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
+    """
+
     # Grid search data pipeline parameters
     start_date = date(2016, 1, 1)
     predictor_cls = BiffPredictorSmart
@@ -216,4 +227,4 @@ if __name__ == '__main__':
         for (key, value) in CRYPTOCURRENCIES.iteritems()
     }
 
-    run_classic_classification()
+    run_classic_training()

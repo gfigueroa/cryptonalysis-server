@@ -306,6 +306,8 @@ class CryptoPredictor(object):
 
         # Save ROI
         if save_roi:
+            if not os.path.exists(DUMP_DIR):
+                os.mkdir(DUMP_DIR)
             with open(os.path.join(DUMP_DIR, 'roi.txt'), 'a') as f:
                 line = "({}) ${} - {} ({} - {}) (p_buy={}, p_sell={})\n".format(self._crypto_name, round(roi, 2),
                                                                                 self.__class__.__name__,

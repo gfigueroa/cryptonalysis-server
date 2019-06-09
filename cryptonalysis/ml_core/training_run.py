@@ -7,7 +7,6 @@ import config
 
 
 # Logging
-logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
 
