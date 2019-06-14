@@ -6,7 +6,7 @@ Configuration classes.
 import os
 from datetime import date
 from logging.config import fileConfig
-from pyhocon import ConfigFactory
+from pyhocon import ConfigFactory, ConfigTree
 from cryptonalysis.utils import misc_utils
 from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name
 
@@ -58,7 +58,7 @@ class TrainingConfig(object):
 
 class CryptonalysisConfig(object):
 
-    def __init__(self, crypto, preprocessing_config, training_config=None):
+    def __init__(self, crypto, preprocessing_config=None, training_config=None):
         """
         Initialize ClassificationConfig object.
         :param crypto: The cryptocurrency to use (e..g ETH, BTC, etc.)
@@ -74,31 +74,64 @@ class CryptonalysisConfig(object):
 
 
 def convert_to_flat_dict(config, prefix=""):
+    """
+    Recursively convert ConfigTree or dictionary into a flat dictionary.
+    :param config
+    :type config: ConfigTree or dict
+    :param prefix: Prefix to add to each key when flattening
+    :return: A flat configuration tree
+    :rtype: dict
+    """
     result = {}
     for k in config:
         v = config[k]
         if isinstance(v, dict):
             for k1 in convert_to_flat_dict(v, k + "."):
-                result[prefix + k1] = config[k1]
+                result[prefix + k1] = str(config[k1])
         else:
-            result[prefix + k] = v
+            result[prefix + k] = str(v)
     return result
 
 
 def convert_to_dict(config):
+    """
+    Recursively convert ConfigTree into a dictionary.
+    :param config
+    :type config: ConfigTree or dict
+    :return: A dictionary
+    :rtype: dict
+    """
     result = {}
     for k in config:
         v = config[k]
-        if isinstance(v, dict):
-            for k1 in convert_to_flat_dict(v):
+        if isinstance(v, dict) or isinstance(v, ConfigTree):
+            for k1 in convert_to_dict(v):
                 result[k1] = config[k1]
         else:
             result[k] = v
     return result
 
 
-def build_training_config_grid(trainining):
-    return None
+def build_cryptonalysis_config_grid(config, grid=None):
+    """
+
+    :param config:
+    :type config: dict
+    :param grid:
+    :return:
+    """
+    if grid is None:
+        grid = []
+
+    for param in config:
+        if type(config[param]) is list:
+            for value in config[param]:
+                temp_config = config.copy()[param] = value
+                grid.append(build_cryptonalysis_config_grid(temp_config, grid))
+        else:
+            grid.append(config)
+
+    return grid
 
 
 def load_preprocessing_config(config_path):
@@ -118,10 +151,6 @@ def load_preprocessing_config(config_path):
     start_date = misc_utils.parse_date(config['preprocessing']['start_date'])
     end_date = misc_utils.parse_date(config['preprocessing']['end_date'])
     predictor_cls = get_predictor_class_from_name(config['preprocessing']['predictor_cls'])
-    predictor_params = {
-        k: config['preprocessing']['predictor_params'][k]
-        for k in config['preprocessing']['predictor_params']
-    }
     preprocessing_config = PreprocessingConfig(
         start_date=start_date,
         end_date=end_date,
@@ -143,7 +172,7 @@ def load_preprocessing_config(config_path):
     return cryptonalysis_config
 
 
-def load_preprocessing_config(config_path):
+def load_training_config(config_path):
     config_file_name = 'training.conf'
     config_file = os.path.join(config_path, config_file_name)
 
@@ -156,33 +185,11 @@ def load_preprocessing_config(config_path):
         flat_config = convert_to_flat_dict(config)
         fileConfig(fname=logging_config_file, defaults=flat_config)
 
-    # Preprocessing config
-    start_date = misc_utils.parse_date(config['preprocessing']['start_date'])
-    end_date = misc_utils.parse_date(config['preprocessing']['end_date'])
-    predictor_cls = get_predictor_class_from_name(config['preprocessing']['predictor_cls'])
-    predictor_params = {
-        k: config['preprocessing']['predictor_params'][k]
-        for k in config['preprocessing']['predictor_params']
-    }
-    preprocessing_config = PreprocessingConfig(
-        start_date=start_date,
-        end_date=end_date,
-        window_size=config['preprocessing']['window_size'],
-        normalize=config['preprocessing']['normalize'],
-        normalize_by_row=config['preprocessing']['normalize_by_row'],
-        price_column=config['preprocessing']['price_column'],
-        save_roi=config['preprocessing']['save_roi'],
-        save_data=config['preprocessing']['save_data'],
-        predictor_cls=predictor_cls,
-        predictor_params=convert_to_dict(config['preprocessing']['predictor_params'])
-    )
+    cryptonalysis_config_grid = build_cryptonalysis_config_grid(convert_to_dict(config))
 
-    # Training config
-    training_config_grid = build_training_config_grid(config['training'])
+    return cryptonalysis_config_grid
 
-    cryptonalysis_config = CryptonalysisConfig(
-        crypto=config['crypto'],
-        preprocessing_config=preprocessing_config
-    )
-    print('Cryptonalysis config:', cryptonalysis_config)
-    return cryptonalysis_config
+
+if __name__ == '__main__':
+    config1 = load_preprocessing_config('config')
+    config2 = load_training_config('config')
