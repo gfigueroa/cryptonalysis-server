@@ -105,10 +105,8 @@ def convert_to_dict(config):
     for k in config:
         v = config[k]
         if isinstance(v, dict) or isinstance(v, ConfigTree):
-            for k1 in convert_to_dict(v):
-                result[k1] = config[k1]
-        else:
-            result[k] = v
+            v = convert_to_dict(v)
+        result[k] = v
     return result
 
 
@@ -127,9 +125,11 @@ def build_cryptonalysis_config_grid(config, grid=None):
         if type(config[param]) is list:
             for value in config[param]:
                 temp_config = config.copy()[param] = value
-                grid.append(build_cryptonalysis_config_grid(temp_config, grid))
-        else:
-            grid.append(config)
+                grid += build_cryptonalysis_config_grid(temp_config, grid)
+        elif type(config[param]) is dict:
+            
+
+    grid.append(config)
 
     return grid
 
