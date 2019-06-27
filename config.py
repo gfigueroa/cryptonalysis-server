@@ -12,48 +12,85 @@ from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_
 
 
 class PreprocessingConfig(object):
-    def __init__(self, start_date, end_date, window_size, normalize, normalize_by_row, price_column, save_roi,
-                 save_data, predictor_cls, predictor_params):
+
+    # Default values
+    START_DATE = misc_utils.parse_date('2015-08-07')
+    END_DATE = misc_utils.parse_date('today')
+    WINDOW_SIZE = 10
+    NORMALIZE = True
+    NORMALIZE_BY_ROW = False
+    PRICE_COLUMN = 'Close'
+    SAVE_ROI = False
+    SAVE_DATA = False
+    PREDICTOR_CLS = get_predictor_class_from_name('BiffPredictor')
+    PREDICTOR_PARAMS = {
+        'prob_buy': 1,
+        'prob_sell': 1,
+        'starting_investment': 100,
+        'daily_allowance': 5,
+        'lookahead_days': 4
+    }
+
+    def __init__(self, preprocessing_config_dict):
         """
-        Initialize PreprocessingConfig object.
-        :param start_date
-        :type start_date: date
-        :param end_date
-        :type end_date: date
-        :param window_size
-        :type window_size: int
-        :param normalize
-        :type normalize: bool
-        :param normalize_by_row
-        :type normalize_by_row: bool
-        :param price_column
-        :type price_column: str
-        :param save_roi
-        :type save_roi: bool
-        :param save_data
-        :type save_data: bool
-        :param predictor_cls
-        :type predictor_cls: ``classobj``
-        :param predictor_params
-        :type predictor_params: dict
+        Initialize PreprocessingConfig object with a dictionary of values.
+        :param preprocessing_config_dict
+        :type preprocessing_config_dict: dict
         """
-        self.start_date = start_date
-        self.end_date = end_date
-        self.window_size = window_size
-        self.normalize = normalize
-        self.normalize_by_row = normalize_by_row
-        self.price_column = price_column
-        self.save_roi = save_roi
-        self.save_data = save_data
-        self.predictor_cls = predictor_cls
-        self.predictor_params = predictor_params
+        if 'start_date' in preprocessing_config_dict:
+            start_date = preprocessing_config_dict['start_date']
+            self.start_date = start_date if type(start_date) is date else misc_utils.parse_date(start_date)
+        else:
+            self.start_date = PreprocessingConfig.START_DATE
+
+        if 'end_date' in preprocessing_config_dict:
+            end_date = preprocessing_config_dict['end_date']
+            self.end_date = end_date if type(end_date) is date else misc_utils.parse_date(end_date)
+        else:
+            self.end_date = PreprocessingConfig.END_DATE
+
+        self.window_size = preprocessing_config_dict['window_size'] \
+            if 'window_size' in preprocessing_config_dict else PreprocessingConfig.WINDOW_SIZE
+
+        self.normalize = preprocessing_config_dict['normalize'] \
+            if 'normalize' in preprocessing_config_dict else PreprocessingConfig.NORMALIZE
+
+        self.normalize_by_row = preprocessing_config_dict['normalize_by_row'] \
+            if 'normalize_by_row' in preprocessing_config_dict else PreprocessingConfig.NORMALIZE_BY_ROW
+
+        self.price_column = preprocessing_config_dict['price_column'] \
+            if 'price_column' in preprocessing_config_dict else PreprocessingConfig.PRICE_COLUMN
+
+        self.save_roi = preprocessing_config_dict['save_roi'] \
+            if 'save_roi' in preprocessing_config_dict else PreprocessingConfig.SAVE_ROI
+
+        self.save_data = preprocessing_config_dict['save_data'] \
+            if 'save_data' in preprocessing_config_dict else PreprocessingConfig.SAVE_DATA
+
+        if 'predictor_cls' in preprocessing_config_dict:
+            predictor_cls = preprocessing_config_dict['predictor_cls']
+            self.predictor_cls = \
+                predictor_cls if type(predictor_cls) is type else get_predictor_class_from_name(predictor_cls)
+        else:
+            self.predictor_cls = PreprocessingConfig.PREDICTOR_CLS
+
+        self.predictor_params = preprocessing_config_dict['predictor_params'] \
+            if 'predictor_params' in preprocessing_config_dict else PreprocessingConfig.PREDICTOR_PARAMS
 
 
 class TrainingConfig(object):
 
-    def __init__(self, preprocessing_config, shuffle_data):
-        self.preprocessing_config = preprocessing_config
-        self.shuffle_data = shuffle_data
+    # Default values
+    SHUFFLE_DATA = True
+
+    def __init__(self, training_config_dict):
+        """
+        Initialize TrainingConfig object with a dictionary of values.
+        :param training_config_dict
+        :type training_config_dict: dict
+        """
+        self.shuffle_data = training_config_dict['shuffle_data'] \
+            if 'shuffle_data' in training_config_dict else TrainingConfig.SHUFFLE_DATA
 
 
 class CryptonalysisConfig(object):
@@ -71,6 +108,23 @@ class CryptonalysisConfig(object):
         self.crypto = crypto
         self.preprocessing_config = preprocessing_config
         self.training_config = training_config
+
+
+class CryptonalysisConfigGrid(object):
+
+    def __init__(self, crypto, preprocessing_config_grid, training_config_grid):
+        """
+        Initialize CryptonalysisConfigGrid object.
+        :param crypto: The cryptocurrency to use (e..g ETH, BTC, etc.)
+        :type crypto: str
+        :param preprocessing_config_grid
+        :type preprocessing_config_grid: list of PreprocessingConfig
+        :param training_config_grid
+        :type training_config_grid: list of TrainingConfig
+        """
+        self.crypto = crypto
+        self.preprocessing_config = preprocessing_config_grid
+        self.training_config = training_config_grid
 
 
 def convert_to_flat_dict(config, prefix=""):
@@ -110,28 +164,50 @@ def convert_to_dict(config):
     return result
 
 
-def build_cryptonalysis_config_grid(config, grid=None):
+def build_cryptonalysis_config_grid(config):
     """
-
-    :param config:
+    Build a CryptonalysisConfigGrid object from a config dictionary.
+    The CryptonalysisConfigGrid object is composed of a list of PreprocessingConfig objects and a list of TrainingConfig
+    objects.
+    :param config
     :type config: dict
-    :param grid:
-    :return:
+    :return: An instance of CryptonalysisConfigGrid.
+    :rtype: CryptonalysisConfigGrid
     """
-    if grid is None:
-        grid = []
 
-    for param in config:
-        if type(config[param]) is list:
-            for value in config[param]:
-                temp_config = config.copy()[param] = value
-                grid += build_cryptonalysis_config_grid(temp_config, grid)
-        elif type(config[param]) is dict:
-            
+    def _build_config_grid(conf, grid=None):
+        temp_config = conf.copy()
+        if grid is None:
+            grid = []
 
-    grid.append(config)
+            # Build dictionary lists
+            for param, value in conf.items():
+                if type(value) is dict:
+                    temp_config[param] = _build_config_grid(value)
 
-    return grid
+        for param, value in temp_config.items():
+            if type(value) is list:
+                for sub_value in value:
+                    temp_config[param] = sub_value
+                    _build_config_grid(temp_config, grid)
+            else:
+                temp_config[param] = value
+
+        if temp_config not in grid:
+            grid.append(temp_config)
+
+        return grid
+
+    preprocessing_config_grid = [PreprocessingConfig(pc) for pc in _build_config_grid(config['preprocessing'])]
+    training_config_grid = [TrainingConfig(tc) for tc in _build_config_grid(config['training'])]
+
+    cryptonalysis_config_grid = CryptonalysisConfigGrid(
+        crypto=config['crypto'],
+        preprocessing_config_grid=preprocessing_config_grid,
+        training_config_grid=training_config_grid
+    )
+
+    return cryptonalysis_config_grid
 
 
 def load_preprocessing_config(config_path):
@@ -148,21 +224,8 @@ def load_preprocessing_config(config_path):
         fileConfig(fname=logging_config_file, defaults=flat_config)
 
     # Preprocessing config
-    start_date = misc_utils.parse_date(config['preprocessing']['start_date'])
-    end_date = misc_utils.parse_date(config['preprocessing']['end_date'])
-    predictor_cls = get_predictor_class_from_name(config['preprocessing']['predictor_cls'])
-    preprocessing_config = PreprocessingConfig(
-        start_date=start_date,
-        end_date=end_date,
-        window_size=config['preprocessing']['window_size'],
-        normalize=config['preprocessing']['normalize'],
-        normalize_by_row=config['preprocessing']['normalize_by_row'],
-        price_column=config['preprocessing']['price_column'],
-        save_roi=config['preprocessing']['save_roi'],
-        save_data=config['preprocessing']['save_data'],
-        predictor_cls=predictor_cls,
-        predictor_params=convert_to_dict(config['preprocessing']['predictor_params'])
-    )
+    preprocessing_config_dict = convert_to_dict(config['preprocessing'])
+    preprocessing_config = PreprocessingConfig(preprocessing_config_dict)
 
     cryptonalysis_config = CryptonalysisConfig(
         crypto=config['crypto'],
@@ -185,7 +248,8 @@ def load_training_config(config_path):
         flat_config = convert_to_flat_dict(config)
         fileConfig(fname=logging_config_file, defaults=flat_config)
 
-    cryptonalysis_config_grid = build_cryptonalysis_config_grid(convert_to_dict(config))
+    config_dict = convert_to_dict(config)
+    cryptonalysis_config_grid = build_cryptonalysis_config_grid(config_dict)
 
     return cryptonalysis_config_grid
 
