@@ -1,11 +1,8 @@
-import config
 import logging
 import numpy as np
 import os
-from config import load_config
-from datetime import date
-from transaction_builders import BiffPredictorSmart
-from preprocessing import run_data_pipeline, CRYPTOCURRENCIES, MASTER_DATA_DIR
+from config import load_cryptonalysis_config_grid, TrainingConfig, CryptonalysisConfigGrid
+from preprocessing import run_preprocessing_pipeline
 from sklearn import svm
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -125,23 +122,22 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     return clf
 
 
-def run_classification_pipeline(preprocessed_df, shuffle_data=True, training_size=0.7, dev_size=0.5):
+def run_training_pipeline(preprocessed_df, training_config, training_size=0.7, dev_size=0.5):
     """
     Run the classification pipeline. The function returns an optimized and trained classification model.
     :param preprocessed_df: The preprocessed DataFrame ready for the classification pipeline
-    :param shuffle_data: Whether or not to shuffle (rows) the training and testing data (default is True)
+    :param training_config
+    :type training_config: TrainingConfig
     :param training_size: The size (0~1) of the training dataset (used in non-CV)
     :param dev_size: The size (0~1) of the development dataset (used in Grid Search CV)
-    :return:
     """
 
-    logger.info("Running classification pipeline...")
-    logger.info("Parameters:\nShuffle data: {0}, Training size: {1}, Development size: {2}".format(shuffle_data,
-                training_size, dev_size))
+    logger.info("Running training pipeline...")
+    logger.info("Training config:\n" + str(training_config))
 
     # 1. Split dataset for classification
     X, y, X_training, y_training, X_testing, y_testing, X_dev, y_dev, X_eval, y_eval = \
-        split_datasets(preprocessed_df, shuffle_data, training_size, dev_size)
+        split_datasets(preprocessed_df, training_config.shuffle_data, training_size, dev_size)
 
     # 2. Grid Search CV with SVMs
     svc = svm.SVC()
@@ -162,57 +158,30 @@ def run_classification_pipeline(preprocessed_df, shuffle_data=True, training_siz
     logger.info("Classification pipeline complete!\n")
 
 
-def run_classic_training(crypto_name, training_config):
+def run_classic_training(cryptonalysis_config_grid):
     """
     Run classic training using grid search hyperparameter optimization.
-    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
-    :type crypto_name: str
-    :param training_config: The training configuration object
-    :type training_config: TrainingConfig
-    :param kwargs: Dictionary of parameters used by the predictor_class (e.g. ProbabilityPredictor's  'prob_buy' and
-    'prob_sell' parameters).
-    :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
+    :param cryptonalysis_config_grid
+    :type cryptonalysis_config_grid: CryptonalysisConfigGrid
     """
+    crypto_name = cryptonalysis_config_grid.crypto
 
-    # Grid search data pipeline parameters
-    start_date = date(2016, 1, 1)
-    predictor_cls = BiffPredictorSmart
-    predictor_params = {
-        'prob_buy': 1,
-        'prob_sell': 1,
-        'starting_investment': 100,
-        'daily_allowance': 5,
-        'lookahead_days': 4
-    }
-    data_pipeline_parameters = {
-        'window_size': [10, 20, 30, 40, 50, 60],
-        'normalize_by_row': [True,  False]
-    }
-    # Grid search classification pipeline parameters
-    classification_pipeline_parameters = {
-        'shuffle_data': [True, False]
-    }
+    # Grid search preprocessing pipeline parameters
+    for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
+        try:
+            preprocessed_data = run_preprocessing_pipeline(crypto_name, preprocessing_config)
+        except Exception as e:
+            logger.error("Error in preprocessing pipeline! Skipping...")
+            logger.error(e.message)
+            break
 
-    # Grid search data pipeline parameters
-    for window_size in data_pipeline_parameters['window_size']:
-        for normalize_by_row in data_pipeline_parameters['normalize_by_row']:
+        # Grid search training pipeline parameters
+        for training_config in cryptonalysis_config_grid.training_config_grid:
             try:
-                preprocessed_data = run_data_pipeline(HISTORICAL_DATA_FILE, starting_date=start_date,
-                                                      window_size=window_size, crypto_name=CRYPTO_NAME,
-                                                      normalize_by_row=normalize_by_row, predictor_class=predictor_cls,
-                                                      **predictor_params)
+                run_training_pipeline(preprocessed_data, training_config)
             except Exception as e:
-                logger.error("Error in data pipeline! Skipping...")
+                logger.error("Error in training pipeline! Skipping...")
                 logger.error(e.message)
-                break
-
-            # Grid search classification pipeline parameters
-            for shu in classification_pipeline_parameters['shuffle_data']:
-                try:
-                    run_classification_pipeline(preprocessed_data, shuffle_data=shu)
-                except Exception as e:
-                    logger.error("Error in classification pipeline! Skipping...")
-                    logger.error(e.message)
 
 
 if __name__ == '__main__':
@@ -220,11 +189,6 @@ if __name__ == '__main__':
     np.random.seed(202)
 
     config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
-    cryptonalysis_config = load_config(config_path)
+    config_grid = load_cryptonalysis_config_grid(config_path)
 
-    HISTORICAL_DATA_FILES = {
-        key: os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(value))
-        for (key, value) in CRYPTOCURRENCIES.iteritems()
-    }
-
-    run_classic_training()
+    run_classic_training(config_grid)

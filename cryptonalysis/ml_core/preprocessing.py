@@ -3,7 +3,7 @@ from pandas import DataFrame
 from transaction_builders import *
 from market import market
 from sklearn.preprocessing import StandardScaler
-from config import load_config, PreprocessingConfig
+from config import load_preprocessing_config, PreprocessingConfig
 import os
 
 
@@ -223,7 +223,7 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
     transactions_df.to_csv(data_file_path, index=False)
 
 
-def run_data_pipeline(crypto_name, preprocessing_config, **kwargs):
+def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     """
     Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for the classification
     task.
@@ -231,12 +231,11 @@ def run_data_pipeline(crypto_name, preprocessing_config, **kwargs):
     :type crypto_name: str
     :param preprocessing_config: The preprocessing configuration object
     :type preprocessing_config: PreprocessingConfig
-    :param kwargs: Dictionary of parameters used by the predictor_class (e.g. ProbabilityPredictor's  'prob_buy' and
-    'prob_sell' parameters).
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
     """
 
     logger.info("Running preprocessing pipeline...")
+    logger.info("Preprocessing config:\n" + str(preprocessing_config))
 
     historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
 
@@ -245,20 +244,14 @@ def run_data_pipeline(crypto_name, preprocessing_config, **kwargs):
     ending_date = preprocessing_config.end_date
 
     # Predictor parameters
-    lookahead_days = kwargs['lookahead_days'] if 'lookahead_days' in kwargs else CryptoPredictor.LOOKAHEAD_DAYS
-    starting_investment = kwargs['starting_investment'] if 'starting_investment' in kwargs else None
-    daily_allowance = kwargs['daily_allowance'] if 'daily_allowance' in kwargs else None
-    prob_buy = kwargs['prob_buy'] if 'prob_buy' in kwargs else CryptoPredictor.PROB_BUY
-    prob_sell = kwargs['prob_sell'] if 'prob_sell' in kwargs else CryptoPredictor.PROB_SELL
+    lookahead_days = preprocessing_config.predictor_params['lookahead_days']
+    starting_investment = preprocessing_config.predictor_params['starting_investment']
+    daily_allowance = preprocessing_config.predictor_params['daily_allowance']
+    prob_buy = preprocessing_config.predictor_params['prob_buy']
+    prob_sell = preprocessing_config.predictor_params['prob_sell']
 
     # 0. Get DF
     df = get_historical_df(historical_file)
-
-    logger.info("Parameters:\nHistorical file: '{0}', Start: {1}, End: {2}, Price col.: '{3}', "
-                "Window size: {4} days, Crypto: '{5}', Norm.: {6}, Norm. by row: {7}".format(
-                    historical_file, starting_date, ending_date, preprocessing_config.price_column,
-                    preprocessing_config.window_size, crypto_name, preprocessing_config.normalize,
-                    preprocessing_config.normalize_by_row))
 
     # 1. Load preprocessed data file if it exists
     transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
@@ -305,10 +298,10 @@ def run_data_pipeline(crypto_name, preprocessing_config, **kwargs):
 if __name__ == '__main__':
     RUNS = 5  # Number of runs for ROI stats
     config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
-    cryptonalysis_config = load_config(config_path)
+    cryptonalysis_config = load_preprocessing_config(config_path)
 
     preprocessed_df = None
     for i in range(RUNS):
-        preprocessed_df = run_data_pipeline(cryptonalysis_config.crypto, cryptonalysis_config.preprocessing_config,
-                                            **cryptonalysis_config.preprocessing_config.predictor_params)
+        preprocessed_df = run_preprocessing_pipeline(cryptonalysis_config.crypto, cryptonalysis_config.preprocessing)
+
     logger.debug(preprocessed_df.head())

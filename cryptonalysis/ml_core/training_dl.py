@@ -2,6 +2,10 @@
 
 import logging
 import numpy as np
+import os
+from config import load_cryptonalysis_config_grid, TrainingConfig, CryptonalysisConfigGrid
+from preprocessing import run_preprocessing_pipeline, CRYPTOCURRENCIES
+from training import split_datasets
 from keras.models import Sequential
 from keras.layers import Activation, Dense
 from keras.layers import LSTM
@@ -47,17 +51,20 @@ def build_deep_learning_datasets(split_dfs, crypto_name):
     return training_inputs, training_outputs, test_inputs, test_outputs
 
 
-def run_deep_learning_pipeline(preprocessed_dfs, shuffle_data=True, dev_size=0.5):
+def run_deep_learning_pipeline(crypto_name, preprocessed_dfs, training_config, dev_size=0.5):
     """
     Run the deep learning pipeline. The function returns an optimized and trained classification model.
+    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
+    :type crypto_name: str
     :param preprocessed_dfs: The preprocessed DataFrames ready for the classification pipeline
-    :param shuffle_data: Whether or not to shuffle (rows) the training and testing data (default is True)
+    :param training_config
+    :type training_config: TrainingConfig
     :param dev_size: The size (0~1) of the development dataset (used in Grid Search CV)
     :return:
     """
 
     logger.info("Running deep learning pipeline...")
-    logger.info("Parameters:\nShuffle data: {}, Development size: {}".format(shuffle_data, dev_size))
+    logger.info("Training config:\n" + str(training_config))
 
     # 1. Split datasets for classification
     logger.info("Splitting datasets for classification...")
@@ -72,15 +79,15 @@ def run_deep_learning_pipeline(preprocessed_dfs, shuffle_data=True, dev_size=0.5
     }
     for (crypto, df) in preprocessed_dfs.iteritems():
         logger.info("*** {} ***".format(crypto))
-        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(df, shuffle=shuffle_data, training_size=0.7,
-                                                                        dev_size=0.5)
+        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(df, shuffle=training_config.shuffle_data,
+                                                                        training_size=0.7, dev_size=0.5)
         split_dfs[crypto]['X_dev'] = X_dev
         split_dfs[crypto]['y_dev'] = y_dev
         split_dfs[crypto]['X_eval'] = X_eval
         split_dfs[crypto]['y_eval'] = y_eval
 
     training_inputs, training_outputs, test_inputs, test_outputs = \
-        build_deep_learning_datasets(split_dfs, CRYPTO_NAME)
+        build_deep_learning_datasets(split_dfs, crypto_name)
 
     # 2. Initialize model architecture
     logger.info("Initializing model architecture...")
@@ -88,8 +95,7 @@ def run_deep_learning_pipeline(preprocessed_dfs, shuffle_data=True, dev_size=0.5
 
     # 3. Train model on data
     logger.info("Training model on data...")
-    model.fit(training_inputs, training_outputs, epochs=100, batch_size=1, verbose=2,
-                                shuffle=True)
+    model.fit(training_inputs, training_outputs, epochs=100, batch_size=1, verbose=2, shuffle=True)
 
     # 4. Evaluate model
     scores = model.evaluate(test_inputs, test_outputs, verbose=2)
@@ -108,43 +114,30 @@ def run_deep_learning_pipeline(preprocessed_dfs, shuffle_data=True, dev_size=0.5
     return model
 
 
-def run_deep_learning():
-    # Grid search data pipeline parameters
-    start_date = date(2016, 1, 1)
-    predictor_cls = BiffPredictorSmart
-    predictor_params = {
-        'prob_buy': 1,
-        'prob_sell': 1,
-        'starting_investment': 100,
-        'daily_allowance': 5,
-        'lookahead_days': 4
-    }
-    data_pipeline_parameters = {
-        'window_size': [50],  # [10, 20, 30, 40, 50, 60],
-        'normalize_by_row': [False]  # , True]
-    }
-    # Grid search classification pipeline parameters
-    classification_pipeline_parameters = {
-        'shuffle_data': [True]  # , False]
-    }
+def run_deep_learning(cryptonalysis_config_grid):
+    """
+    Run deep learning training using grid search hyperparameter optimization.
+    :param cryptonalysis_config_grid
+    :type cryptonalysis_config_grid: CryptonalysisConfigGrid
+    """
 
-    # Grid search data pipeline parameters
-    for window_size in data_pipeline_parameters['window_size']:
-        for normalize_by_row in data_pipeline_parameters['normalize_by_row']:
-            preprocessed_dfs = {
-                crypto: run_data_pipeline(historical_data_file, starting_date=start_date, window_size=window_size,
-                                          crypto_name=crypto, normalize_by_row=normalize_by_row,
-                                          predictor_class=predictor_cls, **predictor_params)
-                for (crypto, historical_data_file) in HISTORICAL_DATA_FILES.iteritems()
-            }
+    # Grid search preprocessing pipeline parameters
+    for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
+        preprocessed_dfs = {
+            crypto_name: run_preprocessing_pipeline(crypto_name, preprocessing_config)
+            for crypto_name in CRYPTOCURRENCIES
+        }
 
-            # Grid search classification pipeline parameters
-            for shu in classification_pipeline_parameters['shuffle_data']:
-                run_deep_learning_pipeline(preprocessed_dfs, shu)
+        # Grid search training pipeline parameters
+        for training_config in cryptonalysis_config_grid.training_config_grid:
+            run_deep_learning_pipeline(cryptonalysis_config_grid.crypto, preprocessed_dfs, training_config)
 
 
 if __name__ == '__main__':
     # random seed for reproducibility
     np.random.seed(202)
 
-    run_deep_learning()
+    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
+    config_grid = load_cryptonalysis_config_grid(config_path)
+
+    run_deep_learning(config_grid)
