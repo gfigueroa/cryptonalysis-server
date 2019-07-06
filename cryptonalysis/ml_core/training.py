@@ -4,7 +4,7 @@ import os
 from config import load_cryptonalysis_config_grid, TrainingConfig, CryptonalysisConfigGrid
 from preprocessing import run_preprocessing_pipeline
 from sklearn import svm
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.neural_network import MLPClassifier
 
@@ -102,7 +102,7 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     best_index = clf.best_index_
     best_score = clf.cv_results_['mean_test_score'][best_index]
     best_std = clf.cv_results_['std_test_score'][best_index]
-    logger.info("Accuracy: %0.3f (+/-%0.03f)" % (best_score, best_std * 2))
+    logger.info("Training accuracy: %0.3f (+/-%0.03f)" % (best_score, best_std * 2))
 
     logger.debug("\nGrid scores on development set:\n")
     means = clf.cv_results_['mean_test_score']
@@ -113,11 +113,11 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     print '\n'
 
     # Evaluation dataset
-    logger.info("Detailed classification report:")
-    logger.info("The model is trained on the full development set (size {0}).".format(len(X_dev)))
-    logger.info("The scores are computed on the full evaluation set (size {0}).".format(len(X_eval)))
+    logger.info("Evaluation results:")
     y_true, y_pred = y_eval, clf.predict(X_eval)
     logger.info('\n' + classification_report(y_true, y_pred))
+    accuracy = accuracy_score(y_true, y_pred)
+    logger.info("Evaluation accuracy: {}".format(accuracy))
 
     return clf
 
@@ -189,6 +189,6 @@ if __name__ == '__main__':
     np.random.seed(202)
 
     config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
-    config_grid = load_cryptonalysis_config_grid(config_path)
+    config_grid = load_cryptonalysis_config_grid(config_path, 'training_best.conf')
 
-    run_classic_training(config_grid)
+    run_classic_training(config_grid

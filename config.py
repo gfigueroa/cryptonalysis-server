@@ -254,8 +254,8 @@ def load_config(config_path, config_file_name):
     return config
 
 
-def load_preprocessing_config(config_path):
-    config = load_config(config_path, 'preprocessing.conf')
+def load_preprocessing_config(config_path, config_file_name='preprocessing.conf'):
+    config = load_config(config_path, config_file_name)
 
     config_dict = convert_to_dict(config)
     cryptonalysis_config = CryptonalysisConfig(config_dict)
@@ -263,8 +263,8 @@ def load_preprocessing_config(config_path):
     return cryptonalysis_config
 
 
-def load_cryptonalysis_config_grid(config_path):
-    config = load_config(config_path, 'training.conf')
+def load_cryptonalysis_config_grid(config_path, config_file_name='training.conf'):
+    config = load_config(config_path, config_file_name)
 
     config_dict = convert_to_dict(config)
     cryptonalysis_config_grid = build_cryptonalysis_config_grid(config_dict)
