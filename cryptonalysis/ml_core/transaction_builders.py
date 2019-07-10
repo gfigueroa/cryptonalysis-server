@@ -308,11 +308,23 @@ class CryptoPredictor(object):
         if save_roi:
             if not os.path.exists(DUMP_DIR):
                 os.mkdir(DUMP_DIR)
-            with open(os.path.join(DUMP_DIR, 'roi.txt'), 'a') as f:
-                line = "({}) ${} - {} ({} - {}) (p_buy={}, p_sell={})\n".format(self._crypto_name, round(roi, 2),
-                                                                                self.__class__.__name__,
-                                                                                self._starting_date, self.ending_date,
-                                                                                self.prob_buy, self.prob_sell)
+            with open(os.path.join(DUMP_DIR, 'roi.csv'), 'a') as f:
+                col_names = ['crypto', 'roi', 'predictor', 'start_date', 'end_date', 'prob_buy', 'prob_sell',
+                             'lookahead']
+                col_vals = [self._crypto_name, round(roi, 2), self.__class__.__name__, self._starting_date,
+                            self.ending_date, self.prob_buy, self.prob_sell, self.lookahead_days]
+                line = ','.join([str(val) for val in col_vals]) + '\n'
+                '''
+                line = \
+                    "({}) ${} - {} ({} - {}) (p_buy={}, p_sell={}, lookahead={})\n".format(self._crypto_name,
+                                                                                           round(roi, 2),
+                                                                                           self.__class__.__name__,
+                                                                                           self._starting_date,
+                                                                                           self.ending_date,
+                                                                                           self.prob_buy,
+                                                                                           self.prob_sell,
+                                                                                           self.lookahead_days)
+                '''
                 f.write(line)
 
 

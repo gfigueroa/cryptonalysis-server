@@ -1,10 +1,10 @@
 import pandas as pd
+import sys
 from pandas import DataFrame
 from transaction_builders import *
 from market import market
 from sklearn.preprocessing import StandardScaler
-from config import load_preprocessing_config, PreprocessingConfig
-import os
+from config import load_cryptonalysis_config_grid, PreprocessingConfig, CryptonalysisConfigGrid
 
 
 # Logging
@@ -254,11 +254,12 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     df = get_historical_df(historical_file)
 
     # 1. Load preprocessed data file if it exists
-    transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
-                                     ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
-                                     preprocessing_config.normalize_by_row, prob_buy, prob_sell)
-    if transactions_df is not None:
-        return transactions_df
+    if preprocessing_config.save_data:
+        transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
+                                         ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
+                                         preprocessing_config.normalize_by_row, prob_buy, prob_sell)
+        if transactions_df is not None:
+            return transactions_df
 
     # 2. Get aggregated DFs
     daily_df, weekly_df, monthly_df = get_aggregated_dfs(df)
@@ -295,13 +296,36 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     return transactions_df
 
 
-if __name__ == '__main__':
-    RUNS = 5  # Number of runs for ROI stats
-    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
-    cryptonalysis_config = load_preprocessing_config(config_path)
+def run_preprocessing(cryptonalysis_config_grid, runs=1):
+    """
+    Run preprocessing using grid search hyperparameter optimization.
+    :param cryptonalysis_config_grid
+    :type cryptonalysis_config_grid: CryptonalysisConfigGrid
+    :param runs: The number of times to run each preprocessing pipeline. Useful when using buy/sell probabilities to
+    calculate average ROI.
+    :type runs: int
+    """
+    logger.info("Config grid size: {}".format(cryptonalysis_config_grid.grid_size))
 
     preprocessed_df = None
-    for i in range(RUNS):
-        preprocessed_df = run_preprocessing_pipeline(cryptonalysis_config.crypto, cryptonalysis_config.preprocessing)
+    for i in range(runs):
+        # Grid search preprocessing pipeline parameters
+        for crypto in cryptonalysis_config_grid.cryptos:
+            logger.info("Crypto: {}".format(crypto))
+            for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
+                preprocessed_df = run_preprocessing_pipeline(crypto, preprocessing_config)
 
     logger.debug(preprocessed_df.head())
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        raise ValueError('Config file not given in args!')
+
+    config_file = sys.argv[1]
+
+    RUNS = 1  # Number of runs for ROI stats
+    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
+    config_grid = load_cryptonalysis_config_grid(config_path, config_file)
+
+    run_preprocessing(config_grid, RUNS)

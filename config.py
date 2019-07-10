@@ -93,6 +93,7 @@ class TrainingConfig(object):
 
     # Default values
     SHUFFLE_DATA = True
+    SAVE_RESULTS = False
 
     def __init__(self, training_config_dict):
         """
@@ -102,6 +103,8 @@ class TrainingConfig(object):
         """
         self.shuffle_data = training_config_dict['shuffle_data'] = training_config_dict['shuffle_data'] \
             if 'shuffle_data' in training_config_dict else TrainingConfig.SHUFFLE_DATA
+        self.save_results = training_config_dict['save_results'] = training_config_dict['save_results'] \
+            if 'save_results' in training_config_dict else TrainingConfig.SAVE_RESULTS
 
         self.training_config_dict = training_config_dict
 
@@ -141,19 +144,23 @@ class CryptonalysisConfig(object):
 
 class CryptonalysisConfigGrid(object):
 
-    def __init__(self, crypto, preprocessing_config_grid, training_config_grid):
+    def __init__(self, cryptos, preprocessing_config_grid, training_config_grid):
         """
         Initialize CryptonalysisConfigGrid object.
-        :param crypto: The cryptocurrency to use (e..g ETH, BTC, etc.)
-        :type crypto: str
+        :param cryptos: List of cryptocurrencies to use (e..g ETH, BTC, etc.)
+        :type cryptos: list of str
         :param preprocessing_config_grid
         :type preprocessing_config_grid: list of PreprocessingConfig
         :param training_config_grid
         :type training_config_grid: list of TrainingConfig
         """
-        self.crypto = crypto
+        if not cryptos:
+            raise ValueError("cryptos list is required in CryptonalysisConfigGrid!")
+
+        self.cryptos = cryptos
         self.preprocessing_config_grid = preprocessing_config_grid
         self.training_config_grid = training_config_grid
+        self.grid_size = len(cryptos) * (len(preprocessing_config_grid) or 1) * (len(training_config_grid) or 1)
 
 
 def convert_to_flat_dict(config, prefix=""):
@@ -227,11 +234,13 @@ def build_cryptonalysis_config_grid(config):
 
         return grid
 
+    cryptos = config['crypto'] if type(config['crypto']) is list else [config['crypto']]
     preprocessing_config_grid = [PreprocessingConfig(pc) for pc in _build_config_grid(config['preprocessing'])]
-    training_config_grid = [TrainingConfig(tc) for tc in _build_config_grid(config['training'])]
+    training_config_grid = [TrainingConfig(tc) for tc in _build_config_grid(config['training'])] \
+        if 'training' in config else []
 
     cryptonalysis_config_grid = CryptonalysisConfigGrid(
-        crypto=config['crypto'],
+        cryptos=cryptos,
         preprocessing_config_grid=preprocessing_config_grid,
         training_config_grid=training_config_grid
     )
@@ -254,7 +263,7 @@ def load_config(config_path, config_file_name):
     return config
 
 
-def load_preprocessing_config(config_path, config_file_name='preprocessing.conf'):
+def load_cryptonalysis_config(config_path, config_file_name):
     config = load_config(config_path, config_file_name)
 
     config_dict = convert_to_dict(config)
@@ -263,7 +272,7 @@ def load_preprocessing_config(config_path, config_file_name='preprocessing.conf'
     return cryptonalysis_config
 
 
-def load_cryptonalysis_config_grid(config_path, config_file_name='training.conf'):
+def load_cryptonalysis_config_grid(config_path, config_file_name):
     config = load_config(config_path, config_file_name)
 
     config_dict = convert_to_dict(config)
@@ -273,8 +282,11 @@ def load_cryptonalysis_config_grid(config_path, config_file_name='training.conf'
 
 
 if __name__ == '__main__':
-    cc = load_preprocessing_config('config')
-    print cc
+    pcg = load_cryptonalysis_config_grid('config', 'preprocessing.conf')
+    for pc in pcg.preprocessing_config_grid:
+        print pc
+    for tc in pcg.training_config_grid:
+        print tc
 
-    cg = load_cryptonalysis_config_grid('config')
-    print cg
+    tcg = load_cryptonalysis_config_grid('config', 'training.conf')
+    print tcg

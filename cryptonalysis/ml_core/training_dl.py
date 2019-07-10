@@ -122,15 +122,16 @@ def run_deep_learning(cryptonalysis_config_grid):
     """
 
     # Grid search preprocessing pipeline parameters
-    for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
-        preprocessed_dfs = {
-            crypto_name: run_preprocessing_pipeline(crypto_name, preprocessing_config)
-            for crypto_name in CRYPTOCURRENCIES
-        }
+    for crypto in cryptonalysis_config_grid.cryptos:
+        for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
+            preprocessed_dfs = {
+                crypto_name: run_preprocessing_pipeline(crypto_name, preprocessing_config)
+                for crypto_name in CRYPTOCURRENCIES
+            }
 
-        # Grid search training pipeline parameters
-        for training_config in cryptonalysis_config_grid.training_config_grid:
-            run_deep_learning_pipeline(cryptonalysis_config_grid.crypto, preprocessed_dfs, training_config)
+            # Grid search training pipeline parameters
+            for training_config in cryptonalysis_config_grid.training_config_grid:
+                run_deep_learning_pipeline(crypto, preprocessed_dfs, training_config)
 
 
 if __name__ == '__main__':

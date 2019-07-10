@@ -1,7 +1,9 @@
 import logging
 import numpy as np
 import os
+import sys
 from config import load_cryptonalysis_config_grid, TrainingConfig, CryptonalysisConfigGrid
+from datetime import datetime
 from preprocessing import run_preprocessing_pipeline
 from sklearn import svm
 from sklearn.metrics import classification_report, accuracy_score
@@ -11,6 +13,8 @@ from sklearn.neural_network import MLPClassifier
 
 # Logging
 logger = logging.getLogger()
+
+DUMP_DIR = os.path.join(os.path.pardir, 'dump')
 
 
 def split_datasets(df, shuffle, training_size, dev_size):
@@ -89,8 +93,9 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     :param X_eval: The evaluation dataset attributes
     :param y_eval: The evaluation dataset targets (labels)
     :param k: (default: 4) The number of folds used in cross validation
-    :return: The trained Grid Search classifier with optimized hyperparameters
-    :rtype: GridSearchCV
+    :return: A tuple containing the trained Grid Search classifier with optimized hyperparameters, the training accuracy
+    and the evaluation accuracy (classifier, training accuracy, evaluation accuracy).
+    :rtype: (GridSearchCV, float, float)
     """
     logger.info("Tuning hyperparameters for {0} for accuracy...".format(classifier.__class__.__name__))
 
@@ -102,7 +107,7 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     best_index = clf.best_index_
     best_score = clf.cv_results_['mean_test_score'][best_index]
     best_std = clf.cv_results_['std_test_score'][best_index]
-    logger.info("Training accuracy: %0.3f (+/-%0.03f)" % (best_score, best_std * 2))
+    logger.info("Training accuracy (%s): %0.3f (+/-%0.03f)" % (classifier.__class__.__name__, best_score, best_std * 2))
 
     logger.debug("\nGrid scores on development set:\n")
     means = clf.cv_results_['mean_test_score']
@@ -117,19 +122,21 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     y_true, y_pred = y_eval, clf.predict(X_eval)
     logger.info('\n' + classification_report(y_true, y_pred))
     accuracy = accuracy_score(y_true, y_pred)
-    logger.info("Evaluation accuracy: {}".format(accuracy))
+    logger.info("Evaluation accuracy ({}): {}".format(classifier.__class__.__name__, accuracy))
 
-    return clf
+    return clf, best_score, accuracy
 
 
 def run_training_pipeline(preprocessed_df, training_config, training_size=0.7, dev_size=0.5):
     """
-    Run the classification pipeline. The function returns an optimized and trained classification model.
+    Run the classification pipeline. The function returns a dictionary of optimized and trained classification models.
     :param preprocessed_df: The preprocessed DataFrame ready for the classification pipeline
     :param training_config
     :type training_config: TrainingConfig
     :param training_size: The size (0~1) of the training dataset (used in non-CV)
     :param dev_size: The size (0~1) of the development dataset (used in Grid Search CV)
+    :return A dictionary containing the optimized trained classification models with some metadata.
+    :rtype: dict
     """
 
     logger.info("Running training pipeline...")
@@ -143,7 +150,8 @@ def run_training_pipeline(preprocessed_df, training_config, training_size=0.7, d
     svc = svm.SVC()
     svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [1e-3, 1e-4], 'C': [0.01, 0.1, 1, 10, 100, 1000]},
                             {'kernel': ["linear"], 'C': [0.01, 0.1, 1, 10, 100, 1000]}]
-    grid_search_cv_svc = get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+    grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
+        get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
 
     # 3. Grid Search CV with NNs
     mlp = MLPClassifier()
@@ -153,9 +161,25 @@ def run_training_pipeline(preprocessed_df, training_config, training_size=0.7, d
         'alpha': [0.1, 1, 10, 100],
         'activation': ["identity", "logistic", "tanh", "relu"]
     }
-    grid_search_cv_nn = get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+    grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
+        get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
 
     logger.info("Classification pipeline complete!\n")
+
+    trained_classifiers = {
+        'svc': {
+            'classifier': grid_search_cv_svc,
+            'training_acc': svc_training_acc,
+            'eval_acc': svc_eval_acc
+        },
+        'mlp': {
+            'classifier': grid_search_cv_mlp,
+            'training_acc': mlp_training_acc,
+            'eval_acc': mlp_eval_acc
+        }
+    }
+
+    return trained_classifiers
 
 
 def run_classic_training(cryptonalysis_config_grid):
@@ -164,31 +188,54 @@ def run_classic_training(cryptonalysis_config_grid):
     :param cryptonalysis_config_grid
     :type cryptonalysis_config_grid: CryptonalysisConfigGrid
     """
-    crypto_name = cryptonalysis_config_grid.crypto
+
+    logger.info("Config grid size: {}".format(cryptonalysis_config_grid.grid_size))
 
     # Grid search preprocessing pipeline parameters
-    for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
-        try:
-            preprocessed_data = run_preprocessing_pipeline(crypto_name, preprocessing_config)
-        except Exception as e:
-            logger.error("Error in preprocessing pipeline! Skipping...")
-            logger.error(e.message)
-            break
-
-        # Grid search training pipeline parameters
-        for training_config in cryptonalysis_config_grid.training_config_grid:
+    for crypto in cryptonalysis_config_grid.cryptos:
+        logger.info("Crypto: {}".format(crypto))
+        for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
             try:
-                run_training_pipeline(preprocessed_data, training_config)
+                preprocessed_data = run_preprocessing_pipeline(crypto, preprocessing_config)
             except Exception as e:
-                logger.error("Error in training pipeline! Skipping...")
+                logger.error("Error in preprocessing pipeline! Skipping...")
                 logger.error(e.message)
+                break
+
+            # Grid search training pipeline parameters
+            for training_config in cryptonalysis_config_grid.training_config_grid:
+                try:
+                    classifiers = run_training_pipeline(preprocessed_data, training_config)
+                    if training_config.save_results:
+                        save_classifier_results(classifiers, crypto, preprocessing_config, training_config)
+                except Exception as e:
+                    logger.error("Error in training pipeline! Skipping...")
+                    logger.error(e.message)
+
+
+def save_classifier_results(classifiers, crypto, preprocessing_config, training_config):
+    if not os.path.exists(DUMP_DIR):
+        os.mkdir(DUMP_DIR)
+
+    file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
+    with open(os.path.join(DUMP_DIR, file_name), 'a') as f:
+        f.write(crypto + '\n')
+        f.write(str(preprocessing_config) + '\n')
+        f.write(str(training_config) + '\n')
+        f.write(str(classifiers) + '\n')
+        f.write('\n**************************************************************\n')
 
 
 if __name__ == '__main__':
     # random seed for reproducibility
     np.random.seed(202)
 
-    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
-    config_grid = load_cryptonalysis_config_grid(config_path, 'training_best.conf')
+    if len(sys.argv) < 2:
+        raise ValueError('Config file not given in args!')
 
-    run_classic_training(config_grid
+    config_file = sys.argv[1]
+
+    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
+    config_grid = load_cryptonalysis_config_grid(config_path, config_file)
+
+    run_classic_training(config_grid)
