@@ -15,21 +15,21 @@ from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_
 class PreprocessingConfig(object):
 
     # Default values
-    START_DATE = misc_utils.parse_date('2015-08-07')
-    END_DATE = misc_utils.parse_date('today')
-    WINDOW_SIZE = 10
-    NORMALIZE = True
-    NORMALIZE_BY_ROW = False
-    PRICE_COLUMN = 'Close'
-    SAVE_ROI = False
-    SAVE_DATA = False
-    PREDICTOR_CLS = get_predictor_class_from_name('BiffPredictor')
+    START_DATE = misc_utils.parse_date('2015-08-07')  # The date from which to start historical data preprocessing
+    END_DATE = misc_utils.parse_date('today')  # The date in which to end historical data preprocessing
+    WINDOW_SIZE = 10  # The window size in days used by the predictor (for sliding window training technique)
+    NORMALIZE = True  # Whether or not to normalize the historical data
+    NORMALIZE_BY_ROW = False  # Normalize by row using feature scaling or use scikit-learn's FeatureScaler
+    PRICE_COLUMN = 'Close'  # The column in the historical dataset used for training and testing
+    SAVE_ROI = False  # Wheter or not to save the ROI to a local file for analysis
+    SAVE_DATA = False  # Whether or not to save preprocessed data to a local file to avoid recalculation
+    PREDICTOR_CLS = get_predictor_class_from_name('BiffPredictor')  # The class used to build transactions
     PREDICTOR_PARAMS = {
-        'prob_buy': 1,
-        'prob_sell': 1,
-        'starting_investment': 100,
-        'daily_allowance': 5,
-        'lookahead_days': 4
+        'prob_buy': 1,  # A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
+        'prob_sell': 1,  # A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
+        'starting_investment': 100,  # How much money to start with (used for ROI simulations)
+        'daily_allowance': 5,  # How much money to invest every day (used for ROI simulations)
+        'lookahead_days': 4  # The number of days to look ahead when making a transaction
     }
 
     def __init__(self, preprocessing_config_dict):
@@ -102,8 +102,11 @@ class PreprocessingConfig(object):
 class TrainingConfig(object):
 
     # Default values
-    SHUFFLE_DATA = True
-    SAVE_RESULTS = False
+    SHUFFLE_DATA = True  # Whether or not to shuffle the rows of the training data
+    TRAINING_SIZE = 0.7  # The size (0~1) of the training dataset (used in non-CV). Remaining is for testing.
+    DEV_SIZE = 0.5  # The size (0~1) of the development dataset (used in Grid Search CV). Remaining is for evaluation.
+    CV_FOLDS = 4  # Number of folds (k) used in cross validation
+    SAVE_RESULTS = False  # Whether or not to save results to a local file
 
     def __init__(self, training_config_dict):
         """
@@ -113,6 +116,12 @@ class TrainingConfig(object):
         """
         self.shuffle_data = training_config_dict['shuffle_data'] = training_config_dict['shuffle_data'] \
             if 'shuffle_data' in training_config_dict else TrainingConfig.SHUFFLE_DATA
+        self.training_size = training_config_dict['training_size'] = float(training_config_dict['training_size']) \
+            if 'training_size' in training_config_dict else TrainingConfig.TRAINING_SIZE
+        self.dev_size = training_config_dict['dev_size'] = float(training_config_dict['dev_size']) \
+            if 'dev_size' in training_config_dict else TrainingConfig.DEV_SIZE
+        self.cv_folds = training_config_dict['cv_folds'] = int(training_config_dict['cv_folds']) \
+            if 'cv_folds' in training_config_dict else TrainingConfig.CV_FOLDS
         self.save_results = training_config_dict['save_results'] = training_config_dict['save_results'] \
             if 'save_results' in training_config_dict else TrainingConfig.SAVE_RESULTS
 
@@ -122,12 +131,33 @@ class TrainingConfig(object):
         return json.dumps(self.training_config_dict, indent=2)
 
 
+class DeepLearningConfig(object):
+
+    # Default values
+    NEURONS = 30  # Number of neurons used to build NN model
+
+    def __init__(self, deep_learning_config_dict):
+        """
+        Initialize DeepLearningConfig object with a dictionary of values.
+        :param deep_learning_config_dict
+        :type deep_learning_config_dict: dict
+        """
+        self.neurons = deep_learning_config_dict['neurons'] = deep_learning_config_dict['neurons'] \
+            if 'neurons' in deep_learning_config_dict else DeepLearningConfig.NEURONS
+
+        self.deep_learning_config_dict = deep_learning_config_dict
+
+    def __str__(self):
+        return json.dumps(self.deep_learning_config_dict, indent=2)
+
+
 class CryptonalysisConfig(object):
 
     # Default values
     CRYPTO = 'ETH'
     PREPROCESSING_CONFIG = PreprocessingConfig({})
     TRAINING_CONFIG = TrainingConfig({})
+    DEEP_LEARNING_CONFIG = DeepLearningConfig({})
 
     def __init__(self, cryptonalysis_config_dict):
         """
@@ -146,6 +176,10 @@ class CryptonalysisConfig(object):
             if 'training' in cryptonalysis_config_dict else CryptonalysisConfig.TRAINING_CONFIG
         cryptonalysis_config_dict['training'] = self.training.training_config_dict
 
+        self.deep_learning = DeepLearningConfig(cryptonalysis_config_dict['deep_learning']) \
+            if 'deep_learning' in cryptonalysis_config_dict else CryptonalysisConfig.DEEP_LEARNING_CONFIG
+        cryptonalysis_config_dict['deep_learning'] = self.deep_learning.deep_learning_config_dict
+
         self.cryptonalysis_config_dict = cryptonalysis_config_dict
 
     def __str__(self):
@@ -154,7 +188,7 @@ class CryptonalysisConfig(object):
 
 class CryptonalysisConfigGrid(object):
 
-    def __init__(self, cryptos, preprocessing_config_grid, training_config_grid):
+    def __init__(self, cryptos, preprocessing_config_grid, training_config_grid, deep_learning_config_grid):
         """
         Initialize CryptonalysisConfigGrid object.
         :param cryptos: List of cryptocurrencies to use (e..g ETH, BTC, etc.)
@@ -163,6 +197,8 @@ class CryptonalysisConfigGrid(object):
         :type preprocessing_config_grid: list of PreprocessingConfig
         :param training_config_grid
         :type training_config_grid: list of TrainingConfig
+        :param deep_learning_config_grid: list of DeepLearningConfig
+        :type deep_learning_config_grid: list of DeepLearningConfig
         """
         if not cryptos:
             raise ValueError("cryptos list is required in CryptonalysisConfigGrid!")
@@ -170,7 +206,9 @@ class CryptonalysisConfigGrid(object):
         self.cryptos = cryptos
         self.preprocessing_config_grid = preprocessing_config_grid
         self.training_config_grid = training_config_grid
-        self.grid_size = len(cryptos) * (len(preprocessing_config_grid) or 1) * (len(training_config_grid) or 1)
+        self.deep_learning_config_grid = deep_learning_config_grid
+        self.grid_size = len(cryptos) * (len(preprocessing_config_grid) or 1) * (len(training_config_grid) or 1) * \
+                         (len(deep_learning_config_grid) or 1)
 
 
 def convert_to_flat_dict(config, prefix=""):
@@ -248,11 +286,14 @@ def build_cryptonalysis_config_grid(config):
     preprocessing_config_grid = [PreprocessingConfig(pc) for pc in _build_config_grid(config['preprocessing'])]
     training_config_grid = [TrainingConfig(tc) for tc in _build_config_grid(config['training'])] \
         if 'training' in config else []
+    deep_learning_config_grid = [DeepLearningConfig(dlc) for dlc in _build_config_grid(config['deep_learning'])] \
+        if 'deep_learning' in config else []
 
     cryptonalysis_config_grid = CryptonalysisConfigGrid(
         cryptos=cryptos,
         preprocessing_config_grid=preprocessing_config_grid,
-        training_config_grid=training_config_grid
+        training_config_grid=training_config_grid,
+        deep_learning_config_grid=deep_learning_config_grid
     )
 
     return cryptonalysis_config_grid
@@ -297,6 +338,11 @@ if __name__ == '__main__':
         print pc
     for tc in pcg.training_config_grid:
         print tc
+    for dlc in pcg.deep_learning_config_grid:
+        print dlc
 
     tcg = load_cryptonalysis_config_grid('config', 'training.conf')
     print tcg
+
+    dlc = load_cryptonalysis_config_grid('config', 'training_dl.conf')
+    print dlc

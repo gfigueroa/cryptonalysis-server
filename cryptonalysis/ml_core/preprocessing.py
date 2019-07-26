@@ -235,7 +235,7 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
     """
 
-    # 0. Get DF
+    # Get DF
     historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
     df = get_historical_df(historical_file)
 
@@ -257,7 +257,7 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     prob_buy = preprocessing_config.predictor_params['prob_buy']
     prob_sell = preprocessing_config.predictor_params['prob_sell']
 
-    # 1. Load preprocessed data file if it exists
+    # Load preprocessed data file if it exists
     if preprocessing_config.save_data:
         transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
                                          ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
@@ -312,12 +312,15 @@ def run_preprocessing(cryptonalysis_config_grid, runs=1):
     logger.info("Config grid size: {}".format(cryptonalysis_config_grid.grid_size))
 
     preprocessed_df = None
+    count = 1
     for i in range(runs):
         # Grid search preprocessing pipeline parameters
         for crypto in cryptonalysis_config_grid.cryptos:
             logger.info("Crypto: {}".format(crypto))
             for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
+                logger.info("Processing configuration {}/{}...".format(count, cryptonalysis_config_grid.grid_size))
                 preprocessed_df = run_preprocessing_pipeline(crypto, preprocessing_config)
+                count += 1
 
     logger.debug(preprocessed_df.head())
 
