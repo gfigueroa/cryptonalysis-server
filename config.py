@@ -10,9 +10,25 @@ from logging.config import fileConfig
 from pyhocon import ConfigFactory, ConfigTree
 from cryptonalysis.utils import misc_utils
 from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name
+from pandas.io.json import json_normalize
 
 
-class PreprocessingConfig(object):
+class Config(object):
+
+    def __init__(self, config_dict):
+        self.config_dict = config_dict
+
+    def to_csv_str(self):
+        flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
+        sorted_keys = sorted(flat_config_dict.keys())
+        values = ','.join([str(flat_config_dict[k]) for k in sorted_keys])
+        return sorted_keys, values
+
+    def __str__(self):
+        return json.dumps(self.config_dict, indent=2)
+
+
+class PreprocessingConfig(Config):
 
     # Default values
     START_DATE = misc_utils.parse_date('2015-08-07')  # The date from which to start historical data preprocessing
@@ -38,6 +54,9 @@ class PreprocessingConfig(object):
         :param preprocessing_config_dict
         :type preprocessing_config_dict: dict
         """
+
+        super(PreprocessingConfig, self).__init__(preprocessing_config_dict)
+
         if 'start_date' in preprocessing_config_dict:
             start_date = preprocessing_config_dict['start_date']
             self.start_date = start_date if type(start_date) is date else misc_utils.parse_date(start_date)
@@ -83,7 +102,7 @@ class PreprocessingConfig(object):
             preprocessing_config_dict['predictor_params'] \
             if 'predictor_params' in preprocessing_config_dict else PreprocessingConfig.PREDICTOR_PARAMS
 
-        self.preprocessing_config_dict = preprocessing_config_dict
+        self.config_dict = preprocessing_config_dict
 
     def adjust_end_date(self, latest_date):
         """
@@ -93,13 +112,13 @@ class PreprocessingConfig(object):
         """
         if latest_date < self.end_date:
             self.end_date = latest_date
-            self.preprocessing_config_dict['end_date'] = datetime.strftime(latest_date, '%Y-%m-%d')
+            self.config_dict['end_date'] = datetime.strftime(latest_date, '%Y-%m-%d')
 
     def __str__(self):
-        return json.dumps(self.preprocessing_config_dict, indent=2)
+        return json.dumps(self.config_dict, indent=2)
 
 
-class TrainingConfig(object):
+class TrainingConfig(Config):
 
     # Default values
     SHUFFLE_DATA = True  # Whether or not to shuffle the rows of the training data
@@ -114,6 +133,9 @@ class TrainingConfig(object):
         :param training_config_dict
         :type training_config_dict: dict
         """
+
+        super(TrainingConfig, self).__init__(training_config_dict)
+
         self.shuffle_data = training_config_dict['shuffle_data'] = training_config_dict['shuffle_data'] \
             if 'shuffle_data' in training_config_dict else TrainingConfig.SHUFFLE_DATA
         self.training_size = training_config_dict['training_size'] = float(training_config_dict['training_size']) \
@@ -125,13 +147,10 @@ class TrainingConfig(object):
         self.save_results = training_config_dict['save_results'] = training_config_dict['save_results'] \
             if 'save_results' in training_config_dict else TrainingConfig.SAVE_RESULTS
 
-        self.training_config_dict = training_config_dict
-
-    def __str__(self):
-        return json.dumps(self.training_config_dict, indent=2)
+        self.config_dict = training_config_dict
 
 
-class DeepLearningConfig(object):
+class DeepLearningConfig(Config):
 
     # Default values
     NEURONS = 30  # Number of neurons used to build NN model
@@ -142,16 +161,15 @@ class DeepLearningConfig(object):
         :param deep_learning_config_dict
         :type deep_learning_config_dict: dict
         """
+        super(DeepLearningConfig, self).__init__(deep_learning_config_dict)
+
         self.neurons = deep_learning_config_dict['neurons'] = deep_learning_config_dict['neurons'] \
             if 'neurons' in deep_learning_config_dict else DeepLearningConfig.NEURONS
 
-        self.deep_learning_config_dict = deep_learning_config_dict
-
-    def __str__(self):
-        return json.dumps(self.deep_learning_config_dict, indent=2)
+        self.config_dict = deep_learning_config_dict
 
 
-class CryptonalysisConfig(object):
+class CryptonalysisConfig(Config):
 
     # Default values
     CRYPTO = 'ETH'
@@ -165,25 +183,24 @@ class CryptonalysisConfig(object):
         :param cryptonalysis_config_dict
         :type cryptonalysis_config_dict: dict
         """
+        super(CryptonalysisConfig, self).__init__(cryptonalysis_config_dict)
+
         self.crypto = cryptonalysis_config_dict['crypto'] = cryptonalysis_config_dict['crypto'] \
             if 'crypto' in cryptonalysis_config_dict else CryptonalysisConfig.CRYPTO
 
         self.preprocessing = PreprocessingConfig(cryptonalysis_config_dict['preprocessing']) \
             if 'preprocessing' in cryptonalysis_config_dict else CryptonalysisConfig.PREPROCESSING_CONFIG
-        cryptonalysis_config_dict['preprocessing'] = self.preprocessing.preprocessing_config_dict
+        cryptonalysis_config_dict['preprocessing'] = self.preprocessing.config_dict
 
         self.training = TrainingConfig(cryptonalysis_config_dict['training']) \
             if 'training' in cryptonalysis_config_dict else CryptonalysisConfig.TRAINING_CONFIG
-        cryptonalysis_config_dict['training'] = self.training.training_config_dict
+        cryptonalysis_config_dict['training'] = self.training.config_dict
 
         self.deep_learning = DeepLearningConfig(cryptonalysis_config_dict['deep_learning']) \
             if 'deep_learning' in cryptonalysis_config_dict else CryptonalysisConfig.DEEP_LEARNING_CONFIG
-        cryptonalysis_config_dict['deep_learning'] = self.deep_learning.deep_learning_config_dict
+        cryptonalysis_config_dict['deep_learning'] = self.deep_learning.config_dict
 
-        self.cryptonalysis_config_dict = cryptonalysis_config_dict
-
-    def __str__(self):
-        return json.dumps(self.cryptonalysis_config_dict, indent=2)
+        self.config_dict = cryptonalysis_config_dict
 
 
 class CryptonalysisConfigGrid(object):
@@ -336,10 +353,13 @@ if __name__ == '__main__':
     pcg = load_cryptonalysis_config_grid('config', 'preprocessing.conf')
     for pc in pcg.preprocessing_config_grid:
         print pc
+        print pc.to_csv_str()
     for tc in pcg.training_config_grid:
         print tc
+        print tc.to_csv_str()
     for dlc in pcg.deep_learning_config_grid:
         print dlc
+        print dlc.to_csv_str()
 
     tcg = load_cryptonalysis_config_grid('config', 'training.conf')
     print tcg

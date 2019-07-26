@@ -201,14 +201,28 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
     if not os.path.exists(RESULTS_DIR):
         os.mkdir(RESULTS_DIR)
 
-    file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, file_name)))
-    with open(os.path.join(RESULTS_DIR, file_name), 'a') as f:
+    # Human-readable
+    hr_file_name = "results_{}.txt".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
+    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
+    with open(os.path.join(RESULTS_DIR, hr_file_name), 'a') as f:
         f.write(crypto + '\n')
         f.write(str(preprocessing_config) + '\n')
         f.write(str(training_config) + '\n')
         f.write(str(classifiers) + '\n')
         f.write('\n**************************************************************\n')
+    
+    # CSV
+    csv_file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
+    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
+    classifier_names = sorted(classifiers.keys())
+    classifier_strings = ["{}_training:{},{}_eval:{}".format(k, classifiers[k]['training_acc'],
+                                                             k, classifiers[k]['eval_acc'])
+                          for k in classifier_names]
+    classifiers_csv = [','.join(classifier_strings)]
+    line = "{},{},{},{}".format(crypto, preprocessing_config.to_csv_str()[1], training_config.to_csv_str()[1],
+                                classifiers_csv)
+    with open(os.path.join(RESULTS_DIR, csv_file_name), 'a') as f:
+        f.write(line + '\n')
 
 
 def run_classic_training(cryptonalysis_config_grid):
