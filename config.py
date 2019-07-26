@@ -5,7 +5,7 @@ Configuration classes.
 
 import json
 import os
-from datetime import date
+from datetime import date, datetime
 from logging.config import fileConfig
 from pyhocon import ConfigFactory, ConfigTree
 from cryptonalysis.utils import misc_utils
@@ -84,6 +84,16 @@ class PreprocessingConfig(object):
             if 'predictor_params' in preprocessing_config_dict else PreprocessingConfig.PREDICTOR_PARAMS
 
         self.preprocessing_config_dict = preprocessing_config_dict
+
+    def adjust_end_date(self, latest_date):
+        """
+        Adjust the end_date if the latest date is earlier.
+        :param latest_date
+        :type latest_date: datetime
+        """
+        if latest_date < self.end_date:
+            self.end_date = latest_date
+            self.preprocessing_config_dict['end_date'] = datetime.strftime(latest_date, '%Y-%m-%d')
 
     def __str__(self):
         return json.dumps(self.preprocessing_config_dict, indent=2)

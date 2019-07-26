@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import os
 import sys
-from config import load_cryptonalysis_config_grid, TrainingConfig, CryptonalysisConfigGrid
+from config import load_cryptonalysis_config_grid, PreprocessingConfig, TrainingConfig, CryptonalysisConfigGrid
 from datetime import datetime
 from preprocessing import run_preprocessing_pipeline
 from sklearn import svm
@@ -14,7 +14,7 @@ from sklearn.neural_network import MLPClassifier
 # Logging
 logger = logging.getLogger()
 
-DUMP_DIR = os.path.join(os.path.pardir, 'dump')
+RESULTS_DIR = os.path.join(os.path.pardir, 'results')
 
 
 def split_datasets(df, shuffle, training_size, dev_size):
@@ -115,14 +115,13 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     parameters = clf.cv_results_['params']
     for mean, std, params in zip(means, stds, parameters):
         logger.debug("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
-    print '\n'
 
     # Evaluation dataset
     logger.info("Evaluation results:")
     y_true, y_pred = y_eval, clf.predict(X_eval)
     logger.info('\n' + classification_report(y_true, y_pred))
     accuracy = accuracy_score(y_true, y_pred)
-    logger.info("Evaluation accuracy ({}): {}".format(classifier.__class__.__name__, accuracy))
+    logger.info("Evaluation accuracy ({}): {}\n".format(classifier.__class__.__name__, accuracy))
 
     return clf, best_score, accuracy
 
@@ -207,18 +206,29 @@ def run_classic_training(cryptonalysis_config_grid):
                 try:
                     classifiers = run_training_pipeline(preprocessed_data, training_config)
                     if training_config.save_results:
-                        save_classifier_results(classifiers, crypto, preprocessing_config, training_config)
+                        save_training_results(classifiers, crypto, preprocessing_config, training_config)
                 except Exception as e:
                     logger.error("Error in training pipeline! Skipping...")
                     logger.error(e.message)
 
 
-def save_classifier_results(classifiers, crypto, preprocessing_config, training_config):
-    if not os.path.exists(DUMP_DIR):
-        os.mkdir(DUMP_DIR)
+def save_training_results(classifiers, crypto, preprocessing_config, training_config):
+    """
+    Save training results to a file.
+    :param classifiers: dictionary of classifiers, containing classifier info, training accuracy and eval accuracy.
+    :type classifiers: dict
+    :param crypto: The name of the crypto
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    """
+    if not os.path.exists(RESULTS_DIR):
+        os.mkdir(RESULTS_DIR)
 
     file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    with open(os.path.join(DUMP_DIR, file_name), 'a') as f:
+    with open(os.path.join(RESULTS_DIR, file_name), 'a') as f:
         f.write(crypto + '\n')
         f.write(str(preprocessing_config) + '\n')
         f.write(str(training_config) + '\n')

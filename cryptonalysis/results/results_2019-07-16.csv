@@ -1,0 +1,270 @@
+ETH
+{
+  "normalize": true, 
+  "window_size": 60, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-05-04", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "save_data": true, 
+  "predictor_cls": "BiffPredictor", 
+  "save_roi": false, 
+  "start_date": "2016-01-01"
+}
+{
+  "save_results": true, 
+  "shuffle_data": true
+}
+{'mlp': {'training_acc': 0.5795847750865052, 'eval_acc': 0.6113989637305699, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9,
+       beta_2=0.999, early_stopping=False, epsilon=1e-08,
+       hidden_layer_sizes=(100,), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=None,
+       shuffle=True, solver='adam', tol=0.0001, validation_fraction=0.1,
+       verbose=False, warm_start=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid={'alpha': [0.1, 1, 10, 100], 'learning_rate': ['constant', 'invscaling', 'adaptive'], 'activation': ['identity', 'logistic', 'tanh', 'relu'], 'hidden_layer_sizes': [(10, 10, 10), (20, 20, 20), (30, 30, 30)]},
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}, 'svc': {'training_acc': 0.5692041522491349, 'eval_acc': 0.5302245250431779, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+  decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+  max_iter=-1, probability=False, random_state=None, shrinking=True,
+  tol=0.001, verbose=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid=[{'kernel': ['rbf', 'poly'], 'C': [0.01, 0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001]}, {'kernel': ['linear'], 'C': [0.01, 0.1, 1, 10, 100, 1000]}],
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 60, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-05-04", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "save_data": true, 
+  "predictor_cls": "BiffPredictor", 
+  "save_roi": false, 
+  "start_date": "2017-01-01"
+}
+{
+  "save_results": true, 
+  "shuffle_data": true
+}
+{'mlp': {'training_acc': 0.6506329113924051, 'eval_acc': 0.6388888888888888, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9,
+       beta_2=0.999, early_stopping=False, epsilon=1e-08,
+       hidden_layer_sizes=(100,), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=None,
+       shuffle=True, solver='adam', tol=0.0001, validation_fraction=0.1,
+       verbose=False, warm_start=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid={'alpha': [0.1, 1, 10, 100], 'learning_rate': ['constant', 'invscaling', 'adaptive'], 'activation': ['identity', 'logistic', 'tanh', 'relu'], 'hidden_layer_sizes': [(10, 10, 10), (20, 20, 20), (30, 30, 30)]},
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}, 'svc': {'training_acc': 0.5772151898734177, 'eval_acc': 0.5681818181818182, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+  decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+  max_iter=-1, probability=False, random_state=None, shrinking=True,
+  tol=0.001, verbose=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid=[{'kernel': ['rbf', 'poly'], 'C': [0.01, 0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001]}, {'kernel': ['linear'], 'C': [0.01, 0.1, 1, 10, 100, 1000]}],
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 60, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-05-04", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "save_data": true, 
+  "predictor_cls": "BiffPredictor", 
+  "save_roi": false, 
+  "start_date": "2018-01-01"
+}
+{
+  "save_results": true, 
+  "shuffle_data": true
+}
+{'mlp': {'training_acc': 0.6995305164319249, 'eval_acc': 0.5117370892018779, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9,
+       beta_2=0.999, early_stopping=False, epsilon=1e-08,
+       hidden_layer_sizes=(100,), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=None,
+       shuffle=True, solver='adam', tol=0.0001, validation_fraction=0.1,
+       verbose=False, warm_start=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid={'alpha': [0.1, 1, 10, 100], 'learning_rate': ['constant', 'invscaling', 'adaptive'], 'activation': ['identity', 'logistic', 'tanh', 'relu'], 'hidden_layer_sizes': [(10, 10, 10), (20, 20, 20), (30, 30, 30)]},
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}, 'svc': {'training_acc': 0.6384976525821596, 'eval_acc': 0.6056338028169014, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+  decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+  max_iter=-1, probability=False, random_state=None, shrinking=True,
+  tol=0.001, verbose=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid=[{'kernel': ['rbf', 'poly'], 'C': [0.01, 0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001]}, {'kernel': ['linear'], 'C': [0.01, 0.1, 1, 10, 100, 1000]}],
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 60, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-05-04", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "save_data": true, 
+  "predictor_cls": "BiffPredictor", 
+  "save_roi": false, 
+  "start_date": "2016-01-01"
+}
+{
+  "save_results": true, 
+  "shuffle_data": true
+}
+{'mlp': {'training_acc': 0.5241379310344828, 'eval_acc': 0.506896551724138, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9,
+       beta_2=0.999, early_stopping=False, epsilon=1e-08,
+       hidden_layer_sizes=(100,), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=None,
+       shuffle=True, solver='adam', tol=0.0001, validation_fraction=0.1,
+       verbose=False, warm_start=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid={'alpha': [0.1, 1, 10, 100], 'learning_rate': ['constant', 'invscaling', 'adaptive'], 'activation': ['identity', 'logistic', 'tanh', 'relu'], 'hidden_layer_sizes': [(10, 10, 10), (20, 20, 20), (30, 30, 30)]},
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}, 'svc': {'training_acc': 0.5310344827586206, 'eval_acc': 0.4879310344827586, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+  decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+  max_iter=-1, probability=False, random_state=None, shrinking=True,
+  tol=0.001, verbose=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid=[{'kernel': ['rbf', 'poly'], 'C': [0.01, 0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001]}, {'kernel': ['linear'], 'C': [0.01, 0.1, 1, 10, 100, 1000]}],
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 60, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-05-04", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "save_data": true, 
+  "predictor_cls": "BiffPredictor", 
+  "save_roi": false, 
+  "start_date": "2017-01-01"
+}
+{
+  "save_results": true, 
+  "shuffle_data": true
+}
+{'mlp': {'training_acc': 0.5214105793450882, 'eval_acc': 0.5289672544080605, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9,
+       beta_2=0.999, early_stopping=False, epsilon=1e-08,
+       hidden_layer_sizes=(100,), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=None,
+       shuffle=True, solver='adam', tol=0.0001, validation_fraction=0.1,
+       verbose=False, warm_start=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid={'alpha': [0.1, 1, 10, 100], 'learning_rate': ['constant', 'invscaling', 'adaptive'], 'activation': ['identity', 'logistic', 'tanh', 'relu'], 'hidden_layer_sizes': [(10, 10, 10), (20, 20, 20), (30, 30, 30)]},
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}, 'svc': {'training_acc': 0.5037783375314862, 'eval_acc': 0.5088161209068011, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+  decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+  max_iter=-1, probability=False, random_state=None, shrinking=True,
+  tol=0.001, verbose=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid=[{'kernel': ['rbf', 'poly'], 'C': [0.01, 0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001]}, {'kernel': ['linear'], 'C': [0.01, 0.1, 1, 10, 100, 1000]}],
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 60, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-05-04", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "save_data": true, 
+  "predictor_cls": "BiffPredictor", 
+  "save_roi": false, 
+  "start_date": "2018-01-01"
+}
+{
+  "save_results": true, 
+  "shuffle_data": true
+}
+{'mlp': {'training_acc': 0.5887850467289719, 'eval_acc': 0.5348837209302325, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9,
+       beta_2=0.999, early_stopping=False, epsilon=1e-08,
+       hidden_layer_sizes=(100,), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=None,
+       shuffle=True, solver='adam', tol=0.0001, validation_fraction=0.1,
+       verbose=False, warm_start=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid={'alpha': [0.1, 1, 10, 100], 'learning_rate': ['constant', 'invscaling', 'adaptive'], 'activation': ['identity', 'logistic', 'tanh', 'relu'], 'hidden_layer_sizes': [(10, 10, 10), (20, 20, 20), (30, 30, 30)]},
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}, 'svc': {'training_acc': 0.5794392523364486, 'eval_acc': 0.4930232558139535, 'classifier': GridSearchCV(cv=4, error_score='raise',
+       estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+  decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
+  max_iter=-1, probability=False, random_state=None, shrinking=True,
+  tol=0.001, verbose=False),
+       fit_params=None, iid=True, n_jobs=1,
+       param_grid=[{'kernel': ['rbf', 'poly'], 'C': [0.01, 0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001]}, {'kernel': ['linear'], 'C': [0.01, 0.1, 1, 10, 100, 1000]}],
+       pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+       scoring='accuracy', verbose=0)}}
+
+**************************************************************

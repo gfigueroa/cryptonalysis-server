@@ -1,6 +1,6 @@
 import pandas as pd
 import sys
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 from transaction_builders import *
 from market import market
 from sklearn.preprocessing import StandardScaler
@@ -26,6 +26,7 @@ def get_historical_df(historical_file):
     Gets a new DataFrame containing the historical data for a particular cryptocurrency.
     :param historical_file: The file path containing the historical data
     :return: DataFrame instance
+    :rtype: DataFrame
     """
     logger.info("Loading historical data from {}...".format(historical_file))
 
@@ -234,10 +235,16 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
     """
 
+    # 0. Get DF
+    historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
+    df = get_historical_df(historical_file)
+
+    # Adjust end_date to latest date in historical df
+    latest_date = to_datetime(df['Date'].iloc[-1]).date()
+    preprocessing_config.adjust_end_date(latest_date)
+
     logger.info("Running preprocessing pipeline...")
     logger.info("Preprocessing config:\n" + str(preprocessing_config))
-
-    historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
 
     # Get runtime parameters
     starting_date = preprocessing_config.start_date  # First date for ETH is 2015 8 7
@@ -250,9 +257,6 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     prob_buy = preprocessing_config.predictor_params['prob_buy']
     prob_sell = preprocessing_config.predictor_params['prob_sell']
 
-    # 0. Get DF
-    df = get_historical_df(historical_file)
-
     # 1. Load preprocessed data file if it exists
     if preprocessing_config.save_data:
         transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
@@ -261,13 +265,13 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
         if transactions_df is not None:
             return transactions_df
 
-    # 2. Get aggregated DFs
+    # Get aggregated DFs
     daily_df, weekly_df, monthly_df = get_aggregated_dfs(df)
 
-    # 3. Get transaction data
+    # Get transaction data
     price_list = daily_df[preprocessing_config.price_column]
 
-    # 4. Run transaction builder
+    # Run transaction builder
     predictor = \
         preprocessing_config.predictor_cls(market, starting_date, price_list, preprocessing_config.window_size,
                                            crypto_name, ending_date, starting_investment=starting_investment,
@@ -275,17 +279,17 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
                                            prob_buy=prob_buy, prob_sell=prob_sell)
     predictor.run_predictor(preprocessing_config.save_roi)
 
-    # 5. Get transactions DataFrame
+    # Get transactions DataFrame
     transactions_df = build_transactions_df(predictor.transactions)
 
     logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == 1])))
     logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == 0])))
 
-    # 6. Data normalization
+    # Data normalization
     if preprocessing_config.normalize:
         transactions_df = normalize_df(transactions_df, preprocessing_config.normalize_by_row)
 
-    # 7. Save data
+    # Save data
     if preprocessing_config.save_data:
         save_data_file(transactions_df, crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
                        ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
