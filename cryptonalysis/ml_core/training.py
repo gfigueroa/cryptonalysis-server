@@ -210,7 +210,7 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
         f.write(str(training_config) + '\n')
         f.write(str(classifiers) + '\n')
         f.write('\n**************************************************************\n')
-    
+
     # CSV
     csv_file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
     logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
