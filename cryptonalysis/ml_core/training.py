@@ -5,6 +5,7 @@ import pandas as pd
 import sys
 from config import load_cryptonalysis_config_grid, PreprocessingConfig, TrainingConfig, CryptonalysisConfigGrid
 from datetime import datetime
+from joblib import dump, load
 from preprocessing import run_preprocessing_pipeline
 from sklearn import svm
 from sklearn.metrics import classification_report, accuracy_score
@@ -16,6 +17,7 @@ from sklearn.neural_network import MLPClassifier
 logger = logging.getLogger()
 
 RESULTS_DIR = os.path.join(os.path.pardir, 'results')
+MODELS_DIR = os.path.join(os.path.pardir, 'models')
 
 
 def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5):
@@ -189,7 +191,7 @@ def run_training_pipeline(preprocessed_df, training_config):
 def save_training_results(classifiers, crypto, preprocessing_config, training_config):
     """
     Save training results to a file.
-    :param classifiers: dictionary of classifiers, containing classifier info, training accuracy and eval accuracy.
+    :param classifiers: dictionary of classifiers, containing classifier, training accuracy and eval accuracy.
     :type classifiers: dict
     :param crypto: The name of the crypto
     :type crypto: str
@@ -198,6 +200,7 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
     :param training_config
     :type training_config: TrainingConfig
     """
+    logger.info('Saving results...')
     if not os.path.exists(RESULTS_DIR):
         os.mkdir(RESULTS_DIR)
 
@@ -218,11 +221,56 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
     classifier_strings = ["{}_training:{},{}_eval:{}".format(k, classifiers[k]['training_acc'],
                                                              k, classifiers[k]['eval_acc'])
                           for k in classifier_names]
-    classifiers_csv = [','.join(classifier_strings)]
+    classifiers_csv = ','.join(classifier_strings)
     line = "{},{},{},{}".format(crypto, preprocessing_config.to_csv_str()[1], training_config.to_csv_str()[1],
                                 classifiers_csv)
     with open(os.path.join(RESULTS_DIR, csv_file_name), 'a') as f:
         f.write(line + '\n')
+
+
+def save_models(classifiers, crypto, preprocessing_config, training_config):
+    """
+    Save trained models to a file.
+    :param classifiers: dictionary of classifiers, containing classifier, training accuracy and eval accuracy.
+    :type classifiers: dict
+    :param crypto: The name of the crypto
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    """
+    logger.info('Saving models...')
+
+    if not os.path.exists(MODELS_DIR):
+        os.mkdir(MODELS_DIR)
+
+    svc = classifiers['svc']['classifier']
+    svc_file_name = get_model_name('svc', crypto, preprocessing_config, training_config)
+    dump(svc, os.path.join(MODELS_DIR, svc_file_name))
+
+    mlp = classifiers['mlp']['classifier']
+    mlp_file_name = get_model_name('mlp', crypto, preprocessing_config, training_config)
+    dump(mlp, os.path.join(MODELS_DIR, mlp_file_name))
+
+
+def get_model_name(classifier, crypto, preprocessing_config, training_config):
+    """
+    Get a string with the name of the trained model to save/load.
+    :param classifier: The classifier name
+    :type classifier: str
+    :param crypto: The crypto name
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    :return: A file name
+    :rtype: str
+    """
+
+    return "{}_{}_{}_{}.joblib".format(classifier, crypto, preprocessing_config.to_single_line_str(),
+                                       training_config.to_single_line_str())
 
 
 def run_classic_training(cryptonalysis_config_grid):
@@ -253,6 +301,8 @@ def run_classic_training(cryptonalysis_config_grid):
                     classifiers = run_training_pipeline(preprocessed_data, training_config)
                     if training_config.save_results:
                         save_training_results(classifiers, crypto, preprocessing_config, training_config)
+                    if training_config.save_model:
+                        save_models(classifiers, crypto, preprocessing_config, training_config)
                 except Exception as e:
                     logger.error("Error in training pipeline! Skipping...")
                     logger.error(e.message)

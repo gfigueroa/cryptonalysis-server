@@ -18,17 +18,15 @@ logger = logging.getLogger()
 RESULTS_DIR = os.path.join(os.path.pardir, 'results')
 
 
-def run_training_pipeline(preprocessed_df, training_config):
+def run_prediction_simulation_pipeline(preprocessed_df, training_config):
     """
-    Run the classification pipeline. The function returns a dictionary of optimized and trained classification models.
+    Run the prediction simulation pipeline.
     :param preprocessed_df: The preprocessed DataFrame ready for the classification pipeline
     :param training_config
     :type training_config: TrainingConfig
-    :return A dictionary containing the optimized trained classification models with some metadata.
-    :rtype: dict
     """
 
-    logger.info("Running training pipeline...")
+    logger.info("Running prediction simulation pipeline...")
     logger.info("Training config:\n" + str(training_config))
 
     # Split dataset for classification
@@ -73,45 +71,6 @@ def run_training_pipeline(preprocessed_df, training_config):
     return trained_classifiers
 
 
-def save_simulation_results(classifiers, crypto, preprocessing_config, training_config):
-    """
-    Save simulation results to a file.
-    :param classifiers: dictionary of classifiers, containing classifier info, training accuracy and eval accuracy.
-    :type classifiers: dict
-    :param crypto: The name of the crypto
-    :type crypto: str
-    :param preprocessing_config
-    :type preprocessing_config: PreprocessingConfig
-    :param training_config
-    :type training_config: TrainingConfig
-    """
-    if not os.path.exists(RESULTS_DIR):
-        os.mkdir(RESULTS_DIR)
-
-    # Human-readable
-    hr_file_name = "results_{}.txt".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
-    with open(os.path.join(RESULTS_DIR, hr_file_name), 'a') as f:
-        f.write(crypto + '\n')
-        f.write(str(preprocessing_config) + '\n')
-        f.write(str(training_config) + '\n')
-        f.write(str(classifiers) + '\n')
-        f.write('\n**************************************************************\n')
-
-    # CSV
-    csv_file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
-    classifier_names = sorted(classifiers.keys())
-    classifier_strings = ["{}_training:{},{}_eval:{}".format(k, classifiers[k]['training_acc'],
-                                                             k, classifiers[k]['eval_acc'])
-                          for k in classifier_names]
-    classifiers_csv = [','.join(classifier_strings)]
-    line = "{},{},{},{}".format(crypto, preprocessing_config.to_csv_str()[1], training_config.to_csv_str()[1],
-                                classifiers_csv)
-    with open(os.path.join(RESULTS_DIR, csv_file_name), 'a') as f:
-        f.write(line + '\n')
-
-
 def run_prediction_simulation(cryptonalysis_config):
     """
     Run a prediction simulation with unused data.
@@ -126,16 +85,15 @@ def run_prediction_simulation(cryptonalysis_config):
     except Exception as e:
         logger.error("Error in preprocessing pipeline! Skipping...")
         logger.error(e.message)
-        break
+        raise e
 
-    # Training
+    # Simulation
     try:
-        classifiers = run_training_pipeline(preprocessed_data, cryptonalysis_config.training)
-        if cryptonalysis_config.training.save_results:
-            save_simulation_results(classifiers, cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,cryptonalysis_config.training)
+        run_prediction_simulation_pipeline(preprocessed_data, cryptonalysis_config.training)
     except Exception as e:
         logger.error("Error in training pipeline! Skipping...")
         logger.error(e.message)
+        raise e
 
 
 if __name__ == '__main__':
@@ -148,6 +106,6 @@ if __name__ == '__main__':
     config_file = sys.argv[1]
 
     config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
-    config_grid = load_cryptonalysis_config(config_path, config_file)
+    config = load_cryptonalysis_config(config_path, config_file)
 
-    run_prediction_simulation(config_grid)
+    run_prediction_simulation(config)

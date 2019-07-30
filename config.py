@@ -24,6 +24,12 @@ class Config(object):
         values = ','.join([str(flat_config_dict[k]) for k in sorted_keys])
         return sorted_keys, values
 
+    def to_single_line_str(self):
+        flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
+        sorted_keys = sorted(flat_config_dict.keys())
+        values = ''.join([str(flat_config_dict[k]) for k in sorted_keys])
+        return values
+
     def __str__(self):
         return json.dumps(self.config_dict, indent=2)
 
@@ -37,7 +43,7 @@ class PreprocessingConfig(Config):
     NORMALIZE = True  # Whether or not to normalize the historical data
     NORMALIZE_BY_ROW = False  # Normalize by row using feature scaling or use scikit-learn's FeatureScaler
     PRICE_COLUMN = 'Close'  # The column in the historical dataset used for training and testing
-    SAVE_ROI = False  # Wheter or not to save the ROI to a local file for analysis
+    SAVE_ROI = False  # Whether or not to save the ROI to a local file for analysis
     SAVE_DATA = False  # Whether or not to save preprocessed data to a local file to avoid recalculation
     PREDICTOR_CLS = get_predictor_class_from_name('BiffPredictor')  # The class used to build transactions
     PREDICTOR_PARAMS = {
@@ -126,6 +132,7 @@ class TrainingConfig(Config):
     DEV_SIZE = 0.5  # The size (0~1) of the development dataset (used in Grid Search CV). Remaining is for evaluation.
     CV_FOLDS = 4  # Number of folds (k) used in cross validation
     SAVE_RESULTS = False  # Whether or not to save results to a local file
+    SAVE_MODEL = False  # Whether or not to save model to a local file
 
     def __init__(self, training_config_dict):
         """
@@ -146,6 +153,8 @@ class TrainingConfig(Config):
             if 'cv_folds' in training_config_dict else TrainingConfig.CV_FOLDS
         self.save_results = training_config_dict['save_results'] = training_config_dict['save_results'] \
             if 'save_results' in training_config_dict else TrainingConfig.SAVE_RESULTS
+        self.save_model = training_config_dict['save_model'] = training_config_dict['save_model'] \
+            if 'save_model' in training_config_dict else TrainingConfig.SAVE_MODEL
 
         self.config_dict = training_config_dict
 
