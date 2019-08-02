@@ -21,8 +21,9 @@ class Config(object):
     def to_csv_str(self):
         flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
         sorted_keys = sorted(flat_config_dict.keys())
+        sorted_keys_str = ','.join(sorted_keys)
         values = ','.join([str(flat_config_dict[k]) for k in sorted_keys])
-        return sorted_keys, values
+        return sorted_keys_str, values
 
     def to_single_line_str(self):
         flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
@@ -43,8 +44,6 @@ class PreprocessingConfig(Config):
     NORMALIZE = True  # Whether or not to normalize the historical data
     NORMALIZE_BY_ROW = False  # Normalize by row using feature scaling or use scikit-learn's FeatureScaler
     PRICE_COLUMN = 'Close'  # The column in the historical dataset used for training and testing
-    SAVE_ROI = False  # Whether or not to save the ROI to a local file for analysis
-    SAVE_DATA = False  # Whether or not to save preprocessed data to a local file to avoid recalculation
     PREDICTOR_CLS = get_predictor_class_from_name('BiffPredictor')  # The class used to build transactions
     PREDICTOR_PARAMS = {
         'prob_buy': 1,  # A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
@@ -90,12 +89,6 @@ class PreprocessingConfig(Config):
         self.price_column = preprocessing_config_dict['price_column'] = preprocessing_config_dict['price_column'] \
             if 'price_column' in preprocessing_config_dict else PreprocessingConfig.PRICE_COLUMN
 
-        self.save_roi = preprocessing_config_dict['save_roi'] = preprocessing_config_dict['save_roi'] \
-            if 'save_roi' in preprocessing_config_dict else PreprocessingConfig.SAVE_ROI
-
-        self.save_data = preprocessing_config_dict['save_data'] = preprocessing_config_dict['save_data'] \
-            if 'save_data' in preprocessing_config_dict else PreprocessingConfig.SAVE_DATA
-
         if 'predictor_cls' in preprocessing_config_dict:
             predictor_cls = preprocessing_config_dict['predictor_cls']
             self.predictor_cls = \
@@ -131,8 +124,6 @@ class TrainingConfig(Config):
     TRAINING_SIZE = 0.7  # The size (0~1) of the training dataset (used in non-CV). Remaining is for testing.
     DEV_SIZE = 0.5  # The size (0~1) of the development dataset (used in Grid Search CV). Remaining is for evaluation.
     CV_FOLDS = 4  # Number of folds (k) used in cross validation
-    SAVE_RESULTS = False  # Whether or not to save results to a local file
-    SAVE_MODEL = False  # Whether or not to save model to a local file
 
     def __init__(self, training_config_dict):
         """
@@ -151,10 +142,6 @@ class TrainingConfig(Config):
             if 'dev_size' in training_config_dict else TrainingConfig.DEV_SIZE
         self.cv_folds = training_config_dict['cv_folds'] = int(training_config_dict['cv_folds']) \
             if 'cv_folds' in training_config_dict else TrainingConfig.CV_FOLDS
-        self.save_results = training_config_dict['save_results'] = training_config_dict['save_results'] \
-            if 'save_results' in training_config_dict else TrainingConfig.SAVE_RESULTS
-        self.save_model = training_config_dict['save_model'] = training_config_dict['save_model'] \
-            if 'save_model' in training_config_dict else TrainingConfig.SAVE_MODEL
 
         self.config_dict = training_config_dict
 
@@ -182,6 +169,11 @@ class CryptonalysisConfig(Config):
 
     # Default values
     CRYPTO = 'ETH'
+    SAVE_PREPROCESSING_ROI = False  # Whether or not to save the preprocessing ROI to a local file for analysis
+    SAVE_PREPROCESSING_DATA = False  # Whether or not to save preprocessed data to a local file to avoid recalculation
+    SAVE_TRAINING_RESULTS = False  # Whether or not to save training results to a local file
+    SAVE_TRAINING_MODEL = False  # Whether or not to save training model to a local file
+
     PREPROCESSING_CONFIG = PreprocessingConfig({})
     TRAINING_CONFIG = TrainingConfig({})
     DEEP_LEARNING_CONFIG = DeepLearningConfig({})
@@ -196,6 +188,22 @@ class CryptonalysisConfig(Config):
 
         self.crypto = cryptonalysis_config_dict['crypto'] = cryptonalysis_config_dict['crypto'] \
             if 'crypto' in cryptonalysis_config_dict else CryptonalysisConfig.CRYPTO
+
+        self.save_preprocessing_roi = cryptonalysis_config_dict['save_preprocessing_roi'] = \
+            cryptonalysis_config_dict['save_preprocessing_roi'] \
+            if 'save_preprocessing_roi' in cryptonalysis_config_dict else CryptonalysisConfig.SAVE_PREPROCESSING_ROI
+
+        self.save_preprocessing_data = cryptonalysis_config_dict['save_preprocessing_data'] = \
+            cryptonalysis_config_dict['save_preprocessing_data'] \
+            if 'save_preprocessing_data' in cryptonalysis_config_dict else CryptonalysisConfig.SAVE_PREPROCESSING_DATA
+
+        self.save_training_results = cryptonalysis_config_dict['save_training_results'] = \
+            cryptonalysis_config_dict['save_training_results'] \
+            if 'save_training_results' in cryptonalysis_config_dict else CryptonalysisConfig.SAVE_TRAINING_RESULTS
+
+        self.save_training_model = cryptonalysis_config_dict['save_training_model'] = \
+            cryptonalysis_config_dict['save_training_model'] \
+            if 'save_training_model' in cryptonalysis_config_dict else CryptonalysisConfig.SAVE_TRAINING_MODEL
 
         self.preprocessing = PreprocessingConfig(cryptonalysis_config_dict['preprocessing']) \
             if 'preprocessing' in cryptonalysis_config_dict else CryptonalysisConfig.PREPROCESSING_CONFIG
@@ -214,11 +222,20 @@ class CryptonalysisConfig(Config):
 
 class CryptonalysisConfigGrid(object):
 
-    def __init__(self, cryptos, preprocessing_config_grid, training_config_grid, deep_learning_config_grid):
+    def __init__(self, cryptos, save_preprocessing_data, preprocessing_config_grid, save_preprocessing_roi,
+                 save_training_results, save_training_model, training_config_grid, deep_learning_config_grid):
         """
         Initialize CryptonalysisConfigGrid object.
         :param cryptos: List of cryptocurrencies to use (e..g ETH, BTC, etc.)
         :type cryptos: list of str
+        :param save_preprocessing_data
+        :type save_preprocessing_data: bool
+        :param save_preprocessing_roi
+        :type save_preprocessing_roi: bool
+        :param save_training_results
+        :type save_training_results: bool
+        :param save_training_model
+        :type save_training_model: bool
         :param preprocessing_config_grid
         :type preprocessing_config_grid: list of PreprocessingConfig
         :param training_config_grid
@@ -230,6 +247,10 @@ class CryptonalysisConfigGrid(object):
             raise ValueError("cryptos list is required in CryptonalysisConfigGrid!")
 
         self.cryptos = cryptos
+        self.save_preprocessing_data = save_preprocessing_data or CryptonalysisConfig.SAVE_PREPROCESSING_DATA
+        self.save_preprocessing_roi = save_preprocessing_roi or CryptonalysisConfig.SAVE_PREPROCESSING_ROI
+        self.save_training_results = save_training_results or CryptonalysisConfig.SAVE_TRAINING_RESULTS
+        self.save_training_model = save_training_model or CryptonalysisConfig.SAVE_TRAINING_MODEL
         self.preprocessing_config_grid = preprocessing_config_grid
         self.training_config_grid = training_config_grid
         self.deep_learning_config_grid = deep_learning_config_grid
@@ -309,6 +330,10 @@ def build_cryptonalysis_config_grid(config):
         return grid
 
     cryptos = config['crypto'] if type(config['crypto']) is list else [config['crypto']]
+    save_preprocessing_data = config['save_preprocessing_data'] if 'save_preprocessing_data' in config else None
+    save_preprocessing_roi = config['save_preprocessing_roi'] if 'save_preprocessing_roi' in config else None
+    save_training_results = config['save_training_results'] if 'save_training_results' in config else None
+    save_training_model = config['save_training_model'] if 'save_training_model' in config else None
     preprocessing_config_grid = [PreprocessingConfig(pc) for pc in _build_config_grid(config['preprocessing'])]
     training_config_grid = [TrainingConfig(tc) for tc in _build_config_grid(config['training'])] \
         if 'training' in config else []
@@ -317,6 +342,10 @@ def build_cryptonalysis_config_grid(config):
 
     cryptonalysis_config_grid = CryptonalysisConfigGrid(
         cryptos=cryptos,
+        save_preprocessing_data=save_preprocessing_data,
+        save_preprocessing_roi=save_preprocessing_roi,
+        save_training_results=save_training_results,
+        save_training_model=save_training_model,
         preprocessing_config_grid=preprocessing_config_grid,
         training_config_grid=training_config_grid,
         deep_learning_config_grid=deep_learning_config_grid
