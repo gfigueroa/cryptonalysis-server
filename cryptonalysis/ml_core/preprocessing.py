@@ -224,7 +224,7 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
     transactions_df.to_csv(data_file_path, index=False)
 
 
-def run_preprocessing_pipeline(crypto_name, preprocessing_config):
+def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, save_roi, simulation=False):
     """
     Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for the classification
     task.
@@ -232,11 +232,21 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     :type crypto_name: str
     :param preprocessing_config: The preprocessing configuration object
     :type preprocessing_config: PreprocessingConfig
+    :param save_data: Whether or not to save preprocessed data to a local file to avoid recalculation
+    :type save_data: bool
+    :param save_roi: Whether or not to save the preprocessing ROI to a local file for analysis
+    :type save_roi: bool
+    :param simulation: (default=False) Whether or not the preprocessing pipeline is being run for a prediction
+    simulation. If true, a set of new data (rather than historical data) will be used.
+    :type simulation: bool
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
     """
 
     # Get DF
-    historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
+    if not simulation:
+        historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
+    else:
+        historical_file = os.path.join(MASTER_DATA_DIR, "new_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
     df = get_historical_df(historical_file)
 
     # Adjust end_date to latest date in historical df
@@ -247,8 +257,8 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     logger.info("Preprocessing config:\n" + str(preprocessing_config))
 
     # Get runtime parameters
-    starting_date = preprocessing_config.start_date  # First date for ETH is 2015 8 7
-    ending_date = preprocessing_config.end_date
+    starting_date = preprocessing_config.start_date if not simulation else None
+    ending_date = preprocessing_config.end_date if not simulation else None
 
     # Predictor parameters
     lookahead_days = preprocessing_config.predictor_params['lookahead_days']
@@ -258,7 +268,7 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
     prob_sell = preprocessing_config.predictor_params['prob_sell']
 
     # Load preprocessed data file if it exists
-    if preprocessing_config.save_data:
+    if save_data:
         transactions_df = load_data_file(crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
                                          ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
                                          preprocessing_config.normalize_by_row, prob_buy, prob_sell)
@@ -273,11 +283,11 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
 
     # Run transaction builder
     predictor = \
-        preprocessing_config.predictor_cls(market, starting_date, price_list, preprocessing_config.window_size,
-                                           crypto_name, ending_date, starting_investment=starting_investment,
+        preprocessing_config.predictor_cls(market, price_list, preprocessing_config.window_size, crypto_name,
+                                           starting_date, ending_date, starting_investment=starting_investment,
                                            daily_allowance=daily_allowance, lookahead_days=lookahead_days,
                                            prob_buy=prob_buy, prob_sell=prob_sell)
-    predictor.run_predictor(preprocessing_config.save_roi)
+    predictor.run_predictor(save_roi)
 
     # Get transactions DataFrame
     transactions_df = build_transactions_df(predictor.transactions)
@@ -290,7 +300,7 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config):
         transactions_df = normalize_df(transactions_df, preprocessing_config.normalize_by_row)
 
     # Save data
-    if preprocessing_config.save_data:
+    if save_data:
         save_data_file(transactions_df, crypto_name, preprocessing_config.predictor_cls, lookahead_days, starting_date,
                        ending_date, preprocessing_config.window_size, preprocessing_config.normalize,
                        preprocessing_config.normalize_by_row, prob_buy, prob_sell)
@@ -319,7 +329,9 @@ def run_preprocessing(cryptonalysis_config_grid, runs=1):
             logger.info("Crypto: {}".format(crypto))
             for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
                 logger.info("Processing configuration {}/{}...".format(count, cryptonalysis_config_grid.grid_size))
-                preprocessed_df = run_preprocessing_pipeline(crypto, preprocessing_config)
+                preprocessed_df = run_preprocessing_pipeline(crypto, preprocessing_config,
+                                                             cryptonalysis_config_grid.save_preprocessing_data,
+                                                             cryptonalysis_config_grid.save_preprocessing_roi)
                 count += 1
 
     logger.debug(preprocessed_df.head())
@@ -331,7 +343,7 @@ if __name__ == '__main__':
 
     config_file = sys.argv[1]
 
-    RUNS = 1  # Number of runs for ROI stats
+    RUNS = 10  # Number of runs for ROI stats
     config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
     config_grid = load_cryptonalysis_config_grid(config_path, config_file)
 

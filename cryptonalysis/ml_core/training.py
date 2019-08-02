@@ -216,15 +216,23 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
 
     # CSV
     csv_file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
+    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, csv_file_name)))
     classifier_names = sorted(classifiers.keys())
-    classifier_strings = ["{}_training:{},{}_eval:{}".format(k, classifiers[k]['training_acc'],
-                                                             k, classifiers[k]['eval_acc'])
+    classifier_strings = ["{},{}".format(classifiers[k]['training_acc'], classifiers[k]['eval_acc'])
                           for k in classifier_names]
+    classifiers_header = ','.join(["{}_training,{}_eval".format(k, k)
+                                  for k in classifier_names])
     classifiers_csv = ','.join(classifier_strings)
+    headers = "{},{},{},{}".format('crypto', preprocessing_config.to_csv_str()[0], training_config.to_csv_str()[0],
+                                   classifiers_header)
     line = "{},{},{},{}".format(crypto, preprocessing_config.to_csv_str()[1], training_config.to_csv_str()[1],
                                 classifiers_csv)
+
+    file_exists = os.path.isfile(os.path.join(RESULTS_DIR, csv_file_name))
     with open(os.path.join(RESULTS_DIR, csv_file_name), 'a') as f:
+        if not file_exists:
+            f.write(headers + '\n')
+
         f.write(line + '\n')
 
 
@@ -240,18 +248,37 @@ def save_models(classifiers, crypto, preprocessing_config, training_config):
     :param training_config
     :type training_config: TrainingConfig
     """
-    logger.info('Saving models...')
-
     if not os.path.exists(MODELS_DIR):
         os.mkdir(MODELS_DIR)
 
     svc = classifiers['svc']['classifier']
     svc_file_name = get_model_name('svc', crypto, preprocessing_config, training_config)
+    logger.info("Saving model {}...".format({svc_file_name}))
     dump(svc, os.path.join(MODELS_DIR, svc_file_name))
 
     mlp = classifiers['mlp']['classifier']
     mlp_file_name = get_model_name('mlp', crypto, preprocessing_config, training_config)
+    logger.info("Saving model {}...".format({mlp_file_name}))
     dump(mlp, os.path.join(MODELS_DIR, mlp_file_name))
+
+
+def load_model(classifier, crypto, preprocessing_config, training_config):
+    """
+    Save trained models to a file.
+    :param classifier: name of the classifier whose model will be loaded, such as 'svc' or 'mlp'
+    :type classifier: str
+    :param crypto: The name of the crypto
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    """
+    file_name = get_model_name(classifier, crypto, preprocessing_config, training_config)
+    logger.info("Loading model {}...".format({file_name}))
+    model = load(os.path.join(MODELS_DIR, file_name))
+
+    return model
 
 
 def get_model_name(classifier, crypto, preprocessing_config, training_config):
@@ -288,7 +315,9 @@ def run_classic_training(cryptonalysis_config_grid):
         logger.info("Crypto: {}".format(crypto))
         for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
             try:
-                preprocessed_data = run_preprocessing_pipeline(crypto, preprocessing_config)
+                preprocessed_data = run_preprocessing_pipeline(crypto, preprocessing_config,
+                                                               cryptonalysis_config_grid.save_preprocessing_data,
+                                                               cryptonalysis_config_grid.save_preprocessing_roi)
             except Exception as e:
                 logger.error("Error in preprocessing pipeline! Skipping...")
                 logger.error(e.message)
@@ -299,13 +328,13 @@ def run_classic_training(cryptonalysis_config_grid):
                 logger.info("Processing configuration {}/{}...".format(count, cryptonalysis_config_grid.grid_size))
                 try:
                     classifiers = run_training_pipeline(preprocessed_data, training_config)
-                    if training_config.save_results:
+                    if cryptonalysis_config_grid.save_training_results:
                         save_training_results(classifiers, crypto, preprocessing_config, training_config)
-                    if training_config.save_model:
+                    if cryptonalysis_config_grid.save_training_model:
                         save_models(classifiers, crypto, preprocessing_config, training_config)
                 except Exception as e:
                     logger.error("Error in training pipeline! Skipping...")
-                    logger.error(e.message)
+                    logger.error(e)
                 count += 1
 
 

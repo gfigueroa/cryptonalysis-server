@@ -76,7 +76,7 @@ def get_split_dfs(preprocessed_dfs, training_config):
     }
     for (crypto, df) in preprocessed_dfs.iteritems():
         logger.info("*** {} ***".format(crypto))
-        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(df, False,  # Never shuffle data here
+        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(df, False,  # TODO: Should shuffle data! Fix idx
                                                                         training_config.training_size,
                                                                         training_config.dev_size)
         split_dfs[crypto]['X_dev'] = X_dev
@@ -148,7 +148,9 @@ def run_deep_learning(cryptonalysis_config_grid):
         logger.info("Crypto: {}".format(crypto))
         for preprocessing_config in cryptonalysis_config_grid.preprocessing_config_grid:
             preprocessed_dfs = {
-                crypto_name: run_preprocessing_pipeline(crypto_name, preprocessing_config)
+                crypto_name: run_preprocessing_pipeline(crypto_name, preprocessing_config,
+                                                        cryptonalysis_config_grid.save_preprocessing_data,
+                                                        cryptonalysis_config_grid.save_preprocessing_roi)
                 for crypto_name in CRYPTOCURRENCIES
             }
 

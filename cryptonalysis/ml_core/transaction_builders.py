@@ -1,6 +1,5 @@
 import random
 from abc import ABCMeta, abstractmethod
-from datetime import date
 import logging
 import os
 
@@ -21,22 +20,21 @@ class CryptoPredictor(object):
     __metaclass__ = ABCMeta
 
     # Default parameters
-    ENDING_DATE = date.today()
     STARTING_INVESTMENT = 100.0  # USD
     DAILY_ALLOWANCE = 5.0
     LOOKAHEAD_DAYS = 1
     PROB_BUY = 1
     PROB_SELL = 1
 
-    def __init__(self, market, starting_date, price_list, window_size, crypto_name, ending_date=None,
+    def __init__(self, market, price_list, window_size, crypto_name, starting_date=None, ending_date=None,
                  starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None):
         """
         CryptoPredictor constructor.
         :param market: An instance of global market parameters
-        :param starting_date: The date from which to start making transactions
         :param price_list: The list of all crypto prices to use for making transactions from the starting date
         :param window_size: The window size to use for making transactions
         :param crypto_name: The cryptocurrency 3-character code (e.g., BTC, ETH, etc.)
+        :param starting_date: The date from which to start making transactions
         :param ending_date: The date in which to stop making transactions (default is today)
         :param starting_investment: The starting investment in fiat
         :param daily_allowance: The daily amount of money (in fiat) that can be invested in making transactions
@@ -56,8 +54,8 @@ class CryptoPredictor(object):
         self.transactions = []
 
         self.market = market
-        self._starting_date = starting_date
-        self.ending_date = ending_date or CryptoPredictor.ENDING_DATE
+        self._starting_date = starting_date or price_list.index[0].date()  # First date in DataFrame
+        self.ending_date = ending_date or price_list.index[-1].date()  # Last date in DataFrame
         self._window_size = window_size
         self._crypto_name = crypto_name
 
@@ -308,11 +306,17 @@ class CryptoPredictor(object):
         if save_roi:
             if not os.path.exists(DUMP_DIR):
                 os.mkdir(DUMP_DIR)
+            file_exists = os.path.isfile(os.path.join(DUMP_DIR, 'roi.csv'))
             with open(os.path.join(DUMP_DIR, 'roi.csv'), 'a') as f:
                 col_names = ['crypto', 'roi', 'predictor', 'start_date', 'end_date', 'prob_buy', 'prob_sell',
                              'lookahead']
                 col_vals = [self._crypto_name, round(roi, 2), self.__class__.__name__, self._starting_date,
                             self.ending_date, self.prob_buy, self.prob_sell, self.lookahead_days]
+
+                # Write headers
+                if not file_exists:
+                    f.write("{}\n".format(','.join(col_names)))
+
                 line = ','.join([str(val) for val in col_vals]) + '\n'
                 '''
                 line = \
