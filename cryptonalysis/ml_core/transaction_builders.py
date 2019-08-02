@@ -306,8 +306,9 @@ class CryptoPredictor(object):
         if save_roi:
             if not os.path.exists(DUMP_DIR):
                 os.mkdir(DUMP_DIR)
-            file_exists = os.path.isfile(os.path.join(DUMP_DIR, 'roi.csv'))
-            with open(os.path.join(DUMP_DIR, 'roi.csv'), 'a') as f:
+            file_name = "roi_b{}_s{}.csv".format(self.prob_buy, self.prob_sell)
+            file_exists = os.path.isfile(os.path.join(DUMP_DIR, file_name))
+            with open(os.path.join(DUMP_DIR, file_name), 'a') as f:
                 col_names = ['crypto', 'roi', 'predictor', 'start_date', 'end_date', 'prob_buy', 'prob_sell',
                              'lookahead']
                 col_vals = [self._crypto_name, round(roi, 2), self.__class__.__name__, self._starting_date,
