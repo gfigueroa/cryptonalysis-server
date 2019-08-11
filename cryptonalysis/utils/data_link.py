@@ -12,14 +12,15 @@ API_URLS = {
 
 def fetch_crypto_data(crypto_name, start_date, end_date):
     """
-
+    Fetch cryptocurrency data from a remote API between a given start date and a given end date.
     :param crypto_name
     :type crypto_name: str
     :param start_date
     :type start_date: date
     :param end_date
     :type end_date: date
-    :return:
+    :return: A cleansed DataFrame with cryptocurrency data.
+    :rtype: pd.DataFrame
     """
 
     start_date_str = start_date.strftime('%Y%m%d')
@@ -46,8 +47,6 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
         df['Market Cap'] = df['Market Cap'].str.replace(',', '')
         df['Market Cap'] = pd.to_numeric(df['Market Cap'])
         df = df.fillna(0)
-
-    print df
 
     return df
 
