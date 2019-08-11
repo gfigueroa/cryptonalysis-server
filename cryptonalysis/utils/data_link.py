@@ -10,11 +10,11 @@ API_URLS = {
 }
 
 
-def fetch_crypto_data(crypto, start_date, end_date):
+def fetch_crypto_data(crypto_name, start_date, end_date):
     """
 
-    :param crypto
-    :type crypto: str
+    :param crypto_name
+    :type crypto_name: str
     :param start_date
     :type start_date: date
     :param end_date
@@ -22,16 +22,38 @@ def fetch_crypto_data(crypto, start_date, end_date):
     :return:
     """
 
-    # get market info for bitcoin from the start of 2016 to the current day
     start_date_str = start_date.strftime('%Y%m%d')
     end_date_str = end_date.strftime('%Y%m%d')
-    crypto_endpoint = "{}?start={}&end={}".format(API_URLS[crypto], start_date_str, end_date_str)
-    bitcoin_market_info = pd.read_html(crypto_endpoint)[0]
-    print bitcoin_market_info
+    crypto_endpoint = "{}?start={}&end={}".format(API_URLS[crypto_name], start_date_str, end_date_str)
+
+    df = pd.read_html(crypto_endpoint)[0]
+
+    # Clean up column names
+    def replace(s):
+        return s.replace('*', '')
+    df = df.rename(replace, axis='columns')
+
+    # Convert dates
+    df['Date'] = pd.to_datetime(df['Date'])
+    df = df.sort_values('Date').reset_index(drop=True)
+
+    # Cleanup
+    if df['Market Cap'].dtype == 'object':
+        # Remove '-'
+        df.loc[df['Market Cap'] == '-', 'Market Cap'] = 0
+
+        # Convert to numeric
+        df['Market Cap'] = df['Market Cap'].str.replace(',', '')
+        df['Market Cap'] = pd.to_numeric(df['Market Cap'])
+        df = df.fillna(0)
+
+    print df
+
+    return df
 
 
 if __name__ == '__main__':
     crypto = 'ETH'
-    start = parse_date('yesterday')
+    start = parse_date('2019-08-01')
     end = parse_date('yesterday')
     fetch_crypto_data(crypto, start, end)
