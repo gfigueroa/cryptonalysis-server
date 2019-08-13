@@ -55,4 +55,5 @@ if __name__ == '__main__':
     crypto = 'ETH'
     start = parse_date('2019-08-01')
     end = parse_date('yesterday')
-    fetch_crypto_data(crypto, start, end)
+    crypto_data = fetch_crypto_data(crypto, start, end)
+    print crypto_data

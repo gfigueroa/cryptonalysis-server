@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import sys
 from config import load_cryptonalysis_config, CryptonalysisConfig
-from preprocessing import run_preprocessing_pipeline
+from preprocessing import get_historical_df, preprocess_dataframe, CRYPTOCURRENCIES, MASTER_DATA_DIR
 from training import load_model
 from sklearn.metrics import classification_report, accuracy_score
 
@@ -36,14 +36,33 @@ def run_prediction_simulation(cryptonalysis_config):
     :type cryptonalysis_config: CryptonalysisConfig
     """
     logger.info("Running prediction simulation...")
+    logger.info("Preprocessing config:\n" + str(cryptonalysis_config.preprocessing))
 
     # Preprocessing
     logger.info("Crypto: {}".format(cryptonalysis_config.crypto))
     try:
-        preprocessed_data = run_preprocessing_pipeline(cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
-                                                       cryptonalysis_config.save_preprocessing_data,
-                                                       cryptonalysis_config.save_preprocessing_roi,
-                                                       simulation=True)
+        data_file = os.path.join(MASTER_DATA_DIR, "new_{}.csv".format(CRYPTOCURRENCIES[cryptonalysis_config.crypto]))
+        df = get_historical_df(data_file)
+
+        # Preprocessing parameters
+        preprocessing_config = cryptonalysis_config.preprocessing
+        predictor_cls = preprocessing_config.predictor_cls
+        price_column = preprocessing_config.price_column
+        window_size = preprocessing_config.window_size
+        normalize = preprocessing_config.normalize
+        normalize_by_row = preprocessing_config.normalize_by_row
+
+        # Predictor parameters
+        lookahead_days = preprocessing_config.predictor_params['lookahead_days']
+        starting_investment = preprocessing_config.predictor_params['starting_investment']
+        daily_allowance = preprocessing_config.predictor_params['daily_allowance']
+
+        # Preprocess the data
+        preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto, predictor_cls, price_column,
+                                                 window_size, normalize, normalize_by_row, starting_date=None,
+                                                 ending_date=None, starting_investment=starting_investment,
+                                                 daily_allowance=daily_allowance, lookahead_days=lookahead_days)
+
     except Exception as e:
         logger.error("Error in preprocessing pipeline! Skipping...")
         logger.error(e.message)
