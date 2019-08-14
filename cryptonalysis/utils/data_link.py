@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import date
+from datetime import date, timedelta
 from cryptonalysis.ml_core.preprocessing import CRYPTOCURRENCIES
 from misc_utils import parse_date
 
@@ -15,9 +15,9 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     Fetch cryptocurrency data from a remote API between a given start date and a given end date.
     :param crypto_name
     :type crypto_name: str
-    :param start_date
+    :param start_date: Inclusive starting date
     :type start_date: date
-    :param end_date
+    :param end_date: Inclusive ending date.
     :type end_date: date
     :return: A cleansed DataFrame with cryptocurrency data.
     :rtype: pd.DataFrame
@@ -51,9 +51,16 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     return df
 
 
+def get_crypto_data_for_date(crypto_name, for_date, window_size):
+    start_date = for_date - timedelta(days=window_size)
+    end_date = for_date - timedelta(days=1)
+    crypto_data = fetch_crypto_data(crypto_name, start_date, end_date)
+
+    return crypto_data
+
+
 if __name__ == '__main__':
     crypto = 'ETH'
-    start = parse_date('2019-08-01')
-    end = parse_date('yesterday')
-    crypto_data = fetch_crypto_data(crypto, start, end)
-    print crypto_data
+    today = parse_date('today')
+    data = get_crypto_data_for_date(crypto, today, 50)
+    print data

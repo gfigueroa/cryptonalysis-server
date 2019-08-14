@@ -6,6 +6,7 @@ import sys
 from config import load_cryptonalysis_config, CryptonalysisConfig
 from preprocessing import get_historical_df, preprocess_dataframe, CRYPTOCURRENCIES, MASTER_DATA_DIR
 from training import load_model
+from cryptonalysis.utils.data_link import fetch_crypto_data
 from sklearn.metrics import classification_report, accuracy_score
 
 
@@ -97,6 +98,9 @@ def run_prediction_simulation(cryptonalysis_config):
         logger.error("Error in prediction simulation! Skipping...")
         logger.error(e.message)
         raise e
+
+
+
 
 
 if __name__ == '__main__':
