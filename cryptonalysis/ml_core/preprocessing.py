@@ -19,6 +19,10 @@ CRYPTOCURRENCIES = {
     'LTC': "litecoin",
     'USDT': "tether"
 }
+TRANSACTION_TYPE = {
+    'BUY': 1,
+    'SELL': 0
+}
 
 
 def get_historical_df(historical_file):
@@ -77,7 +81,9 @@ def build_transactions_df(transactions):
     Build a DataFrame ready for classification (i.e., X and y) based on a dictionary of transactions.
     :param transactions: A list of dictionaries of the form
     [{'transaction': 'TRANSACTION_TYPE', 'prices': [price1, price2, ...]}, ...]
+    :type transactions: list of dict
     :return: A DataFrame with N price columns and a transaction column (1=BUY, 0=SELL)
+    :rtype: pd.DataFrame
     """
 
     logger.info("Getting transactions DataFrame...")
@@ -91,7 +97,7 @@ def build_transactions_df(transactions):
     df = DataFrame(columns=df_columns)
     for row in range(len(transactions)):
         prices = list(transactions[row]['prices'])
-        transaction = 1 if transactions[row]['transaction'] == 'BUY' else 0
+        transaction = TRANSACTION_TYPE[transactions[row]['transaction']]
         df.loc[row] = prices + [transaction]
 
     df['transaction'] = df['transaction'].astype(int)
@@ -274,8 +280,8 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     # Get transactions DataFrame
     transactions_df = build_transactions_df(predictor.transactions)
 
-    logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == 1])))
-    logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == 0])))
+    logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['BUY']])))
+    logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['SELL']])))
 
     # Data normalization
     if normalize:
