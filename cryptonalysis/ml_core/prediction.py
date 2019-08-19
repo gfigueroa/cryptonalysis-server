@@ -109,20 +109,13 @@ def predict_for_date(cryptonalysis_config, for_date):
     preprocessing_config = cryptonalysis_config.preprocessing
     predictor_cls = preprocessing_config.predictor_cls
     price_column = preprocessing_config.price_column
-    window_size = preprocessing_config.window_size
+    window_size = 50 # preprocessing_config.window_size
     normalize = preprocessing_config.normalize
     normalize_by_row = preprocessing_config.normalize_by_row
 
-    # Predictor parameters
-    lookahead_days = preprocessing_config.predictor_params['lookahead_days']
-    starting_investment = preprocessing_config.predictor_params['starting_investment']
-    daily_allowance = preprocessing_config.predictor_params['daily_allowance']
-
     # Preprocess the data
     preprocessed_data = preprocess_dataframe(crypto_data, cryptonalysis_config.crypto, predictor_cls, price_column,
-                                             window_size, normalize, normalize_by_row, starting_date=None,
-                                             ending_date=None, starting_investment=starting_investment,
-                                             daily_allowance=daily_allowance, lookahead_days=0)
+                                             window_size, normalize, normalize_by_row, run_predictor=False)
 
     return preprocessed_data
 

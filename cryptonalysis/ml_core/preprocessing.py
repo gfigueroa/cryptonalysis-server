@@ -21,7 +21,8 @@ CRYPTOCURRENCIES = {
 }
 TRANSACTION_TYPE = {
     'BUY': 1,
-    'SELL': 0
+    'SELL': 0,
+    'UNKNOWN': -1  # Used for pure prediction
 }
 
 
@@ -82,7 +83,7 @@ def build_transactions_df(transactions):
     :param transactions: A list of dictionaries of the form
     [{'transaction': 'TRANSACTION_TYPE', 'prices': [price1, price2, ...]}, ...]
     :type transactions: list of dict
-    :return: A DataFrame with N price columns and a transaction column (1=BUY, 0=SELL)
+    :return: A DataFrame with N price columns and a transaction column (1=BUY, 0=SELL, -1=UNKNOWN)
     :rtype: pd.DataFrame
     """
 
@@ -232,9 +233,11 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
 
 def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_size, normalize, normalize_by_row,
                          starting_date=None, ending_date=None, starting_investment=None, daily_allowance=None,
-                         lookahead_days=None, prob_buy=None, prob_sell=None, save_roi=None):
+                         lookahead_days=None, prob_buy=None, prob_sell=None, save_roi=None, run_predictor=True):
     """
     Preprocess a dataframe containing cryptocurrency information and have it ready for classification.
+    The preprocessing, by default, runs a `CryptoPredictor`, which is necessary for training and testing models.
+    This step can be skipped when only daily prediction is required.
     :param df: The DataFrame containing the unprocessed cryptocurrency data
     :type df: pd.DataFrame
     :param crypto_name
@@ -261,6 +264,8 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     when it actually has to sell.
     :param save_roi: Whether or not to save the ROI of this predictor run in a file
     :type save_roi: bool
+    :param run_predictor: Whether or not to run the `CryptoPredictor` specified in the `predictor_cls` parameter.
+    :type run_predictor: bool
     :return: A preprocessing DataFrame containing daily transactions in the last column.
     :rtype: pd.DataFrame
     """
@@ -272,16 +277,20 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     price_list = daily_df[price_column]
 
     # Run transaction builder
-    predictor = predictor_cls(market, price_list, window_size, crypto_name, starting_date, ending_date,
-                              starting_investment=starting_investment, daily_allowance=daily_allowance,
-                              lookahead_days=lookahead_days, prob_buy=prob_buy, prob_sell=prob_sell)
-    predictor.run_predictor(save_roi)
+    if run_predictor:
+        predictor = predictor_cls(market, price_list, window_size, crypto_name, starting_date, ending_date,
+                                  starting_investment=starting_investment, daily_allowance=daily_allowance,
+                                  lookahead_days=lookahead_days, prob_buy=prob_buy, prob_sell=prob_sell)
+        predictor.run_predictor(save_roi)
 
-    # Get transactions DataFrame
-    transactions_df = build_transactions_df(predictor.transactions)
+        # Get transactions DataFrame
+        transactions_df = build_transactions_df(predictor.transactions)
 
-    logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['BUY']])))
-    logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['SELL']])))
+        logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['BUY']])))
+        logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['SELL']])))
+    else:  # Pure prediction (unknown target)
+        transactions = [{'transaction': 'UNKNOWN', 'prices': price_list[-window_size:]}]  # Ensure window size
+        transactions_df = build_transactions_df(transactions)
 
     # Data normalization
     if normalize:
