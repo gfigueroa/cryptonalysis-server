@@ -1,8 +1,12 @@
+import logging
 import pandas as pd
-from datetime import date, timedelta
 from cryptonalysis.ml_core.preprocessing import CRYPTOCURRENCIES
+from datetime import date, timedelta
 from misc_utils import parse_date
 
+
+# Logging
+logger = logging.getLogger()
 
 API_URLS = {
     crypto_short: "https://coinmarketcap.com/currencies/{}/historical-data/".format(crypto_long)
@@ -52,6 +56,21 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
 
 
 def get_crypto_data_for_date(crypto_name, for_date, window_size):
+    """
+    Get the cryptocurrency data for a given date (minus 1 day) with a given time window size in days.
+    Given that the data for the given date is probably not yet ready, the last data point will actually correspond to
+    one day before the `for_date`.
+    :param crypto_name
+    :param for_date: The date for which the data will be retrieved (in practice it is for the previous day).
+    :type for_date: date
+    :param window_size: The number of days before the given date worth of data that will be retrieved.
+    For example, if the value is 10, 10 rows of data will be retrieved between the day before `for_date` and -10 days,
+    both inclusive.
+    :type window_size: int
+    :return:
+    """
+    logger.info("Getting {} data for {} with window size {}...".format(crypto_name, for_date, window_size))
+
     start_date = for_date - timedelta(days=window_size)
     end_date = for_date - timedelta(days=1)
     crypto_data = fetch_crypto_data(crypto_name, start_date, end_date)

@@ -1,12 +1,25 @@
-import random
-from abc import ABCMeta, abstractmethod
 import logging
 import os
+import random
+from abc import ABCMeta, abstractmethod
 
 # Logging
 logger = logging.getLogger()
 
 DUMP_DIR = os.path.join(os.path.pardir, 'dump')
+TRANSACTION_TYPE = {
+    'BUY': 1,
+    'SELL': 0,
+    'UNKNOWN': -1  # Used for pure prediction
+}
+
+
+def get_transaction_type(transaction_value):
+    for transaction, value in TRANSACTION_TYPE.items():
+        if transaction_value == value:
+            return transaction
+
+    raise ValueError("Unknown transaction value {}".format(transaction_value))
 
 
 class CryptoPredictor(object):
@@ -277,6 +290,50 @@ class CryptoPredictor(object):
         self._sell_all_crypto(current_price, save_roi)  # Sell everything
 
         return self.transactions
+
+    def run_transaction_simulation(self, transactions):
+        """
+        Run a transaction simulation given a list of transactions to perform per day.
+        :param transactions: a list of transactions (as ints) to perform on the given daily prices.
+        :type transactions: list of int
+        """
+
+        # Initial conditions
+        self.total_investment = self.starting_investment
+        self.cash = self.starting_investment
+        self.owned_crypto = 0
+
+        # Start trading
+        logger.info("Running transaction simulation...")
+        logger.info("Predictor parameters:\nStarting investment: ${0}, Daily allowance: ${1}".format(
+            self.starting_investment, self.daily_allowance))
+
+        # First crypto purchase
+        day = 0
+        current_price = self._price_list[day]
+        self.perform_transaction(True, self.get_max_crypto_transaction(True, current_price), current_price)
+
+        for price, transaction in zip(self._price_list, transactions):
+            logger.debug("Day {0} - {1}".format(day, self._price_list.index[day]))
+
+            crypto_amount, fiat_amount = self.buy(price) \
+                if get_transaction_type(transaction) == 'BUY' else self.sell(price)
+            # Ignore for transactions less than or close to a minimum crypto/fiat transaction
+            if crypto_amount < self.market.min_transaction_size_crypto or \
+                    round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
+                crypto_amount = 0
+
+            self.perform_transaction(get_transaction_type(transaction) == 'BUY', crypto_amount, price)
+
+            # End of the day allowance
+            self.cash += self.daily_allowance
+            self.total_investment += self.daily_allowance
+
+            day += 1
+
+        logger.info("Finished running transaction simulation")
+        logger.info("End date: {0}".format(self._price_list.index[-1]))
+        self._sell_all_crypto(current_price, False)  # Sell everything
 
     def _sell_all_crypto(self, current_price, save_roi):
         """

@@ -1,11 +1,12 @@
+import logging
+import os
 import pandas as pd
 import sys
-from pandas import DataFrame, to_datetime
-from transaction_builders import *
-from market import market
-from sklearn.preprocessing import StandardScaler
 from config import load_cryptonalysis_config_grid, PreprocessingConfig, CryptonalysisConfigGrid
-
+from market import market
+from pandas import DataFrame, to_datetime
+from sklearn.preprocessing import StandardScaler
+from transaction_builders import TRANSACTION_TYPE
 
 # Logging
 logger = logging.getLogger()
@@ -18,11 +19,6 @@ CRYPTOCURRENCIES = {
     'XRP': "ripple",
     'LTC': "litecoin",
     'USDT': "tether"
-}
-TRANSACTION_TYPE = {
-    'BUY': 1,
-    'SELL': 0,
-    'UNKNOWN': -1  # Used for pure prediction
 }
 
 
@@ -75,6 +71,35 @@ def get_aggregated_dfs(historical_df):
     monthly_df = df.groupby(by=['Month']).mean()
 
     return daily_df, weekly_df, monthly_df
+
+
+def get_price_list(df, price_column, window_size=None, lookahead_days=None):
+    """
+    Get a DataFrame with a single column of prices given a composite DataFrame and the name of the price column to
+    consider.
+    There are two optional parameters `window_size` and `lookahead_days` to cut the price list accordingly.
+    :param df: The original cryptocurrency DataFrame.
+    :type df: DataFrame
+    :param price_column: The name of the column containing the crypto price to consider.
+    :type price_column: str
+    :param window_size: The window size to use for making transactions
+    :param lookahead_days: The number of days to look ahead when making a transaction
+    :return: A DataFrame containing a single column with cryptocurrency prices
+    :rtype: DataFrame
+    """
+
+    # Get aggregated DFs
+    daily_df, weekly_df, monthly_df = get_aggregated_dfs(df)
+
+    # Get transaction data
+    price_list = daily_df[price_column]
+
+    if window_size:
+        price_list = price_list[window_size - 1:]  # Remove first window_size prices
+    if lookahead_days:
+        price_list = price_list[:-lookahead_days]
+
+    return price_list
 
 
 def build_transactions_df(transactions):
@@ -270,11 +295,7 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     :rtype: pd.DataFrame
     """
 
-    # Get aggregated DFs
-    daily_df, weekly_df, monthly_df = get_aggregated_dfs(df)
-
-    # Get transaction data
-    price_list = daily_df[price_column]
+    price_list = get_price_list(df, price_column)
 
     # Run transaction builder
     if run_predictor:
@@ -293,6 +314,7 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
         transactions_df = build_transactions_df(transactions)
 
     # Data normalization
+    # TODO: Normalization should be part of training stage and column-based normalization should be stored with model
     if normalize:
         transactions_df = normalize_df(transactions_df, normalize_by_row)
 
@@ -312,6 +334,7 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     :param save_roi: Whether or not to save the preprocessing ROI to a local file for analysis
     :type save_roi: bool
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
+    :rtype: DataFrame
     """
 
     logger.info("Running preprocessing pipeline...")

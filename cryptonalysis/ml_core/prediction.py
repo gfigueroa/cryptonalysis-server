@@ -4,10 +4,13 @@ import os
 import pandas as pd
 import sys
 from config import load_cryptonalysis_config, CryptonalysisConfig
-from preprocessing import get_historical_df, preprocess_dataframe, CRYPTOCURRENCIES, MASTER_DATA_DIR
-from training import load_model
 from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from cryptonalysis.utils.misc_utils import parse_date
+from market import market
+from preprocessing import get_historical_df, preprocess_dataframe, CRYPTOCURRENCIES, MASTER_DATA_DIR, \
+    get_price_list
+from training import load_model
+from transaction_builders import get_transaction_type
 from sklearn.metrics import classification_report, accuracy_score
 
 
@@ -22,7 +25,7 @@ def split_dataset(df):
     Split the DataFrame into an attribute vector X and a target vector y.
     :param df: The DataFrame to split
     :type df: pd.DataFrame
-    :return: a tuple of (X, y)
+    :return: a tuple of attribute and target vectors (X, y)
     :rtype: (pd.DataFrame, pd.DataFrame)
     """
     X = df.iloc[:, :-1]
@@ -33,14 +36,14 @@ def split_dataset(df):
 
 def run_prediction_simulation(cryptonalysis_config):
     """
-    Run a prediction simulation with unused data.
+    Run a prediction simulation with unseen data.
     :param cryptonalysis_config
     :type cryptonalysis_config: CryptonalysisConfig
     """
     logger.info("Running prediction simulation...")
     logger.info("Preprocessing config:\n" + str(cryptonalysis_config.preprocessing))
 
-    # Preprocessing
+    # Preprocessing for ground-truth transactions
     logger.info("Crypto: {}".format(cryptonalysis_config.crypto))
     try:
         data_file = os.path.join(MASTER_DATA_DIR, "new_{}.csv".format(CRYPTOCURRENCIES[cryptonalysis_config.crypto]))
@@ -64,13 +67,12 @@ def run_prediction_simulation(cryptonalysis_config):
                                                  window_size, normalize, normalize_by_row, starting_date=None,
                                                  ending_date=None, starting_investment=starting_investment,
                                                  daily_allowance=daily_allowance, lookahead_days=lookahead_days)
-
     except Exception as e:
         logger.error("Error in preprocessing pipeline! Skipping...")
         logger.error(e.message)
         raise e
 
-    # Simulation
+    # Transaction simulation for model predictions and ROI
     logger.info("Training config:\n" + str(cryptonalysis_config.training))
     try:
         # Split dataset for classification
@@ -83,16 +85,27 @@ def run_prediction_simulation(cryptonalysis_config):
 
         # Evaluation dataset
         logger.info("Evaluation results for SVC model:")
-        y_true, y_pred = y, svc_model.predict(X)
-        logger.info('\n' + classification_report(y_true, y_pred))
-        accuracy = accuracy_score(y_true, y_pred)
+        y_true, y_pred_svc = y, svc_model.predict(X)
+        logger.info('\n' + classification_report(y_true, y_pred_svc))
+        accuracy = accuracy_score(y_true, y_pred_svc)
         logger.info("Evaluation accuracy (SVC): {}\n".format(accuracy))
 
         logger.info("Evaluation results for MLP model:")
-        y_true, y_pred = y, mlp_model.predict(X)
-        logger.info('\n' + classification_report(y_true, y_pred))
-        accuracy = accuracy_score(y_true, y_pred)
+        y_true, y_pred_mlp = y, mlp_model.predict(X)
+        logger.info('\n' + classification_report(y_true, y_pred_mlp))
+        accuracy = accuracy_score(y_true, y_pred_mlp)
         logger.info("Evaluation accuracy (MLP): {}\n".format(accuracy))
+
+        # Run transactions to calculate ROI
+        prices = get_price_list(df, price_column, window_size, lookahead_days)
+        predictor = predictor_cls(market, prices, window_size, cryptonalysis_config.crypto, starting_date=None,
+                                  ending_date=None, starting_investment=starting_investment,
+                                  daily_allowance=daily_allowance, lookahead_days=lookahead_days)
+
+        logger.info("Prediction simulation for SVC...")
+        predictor.run_transaction_simulation(y_pred_svc.tolist())
+        logger.info("Prediction simulation for MLP...")
+        predictor.run_transaction_simulation(y_pred_mlp.tolist())
 
         logger.info("Prediction simulation complete!\n")
     except Exception as e:
@@ -102,6 +115,22 @@ def run_prediction_simulation(cryptonalysis_config):
 
 
 def predict_for_date(cryptonalysis_config, for_date):
+    """
+    Predict a transaction (BUY/SELL) for a given date with a given CryptonalysisConfig object.
+    The data for the given date is extracted from a remote location and preprocessed given the specific configuration.
+    A presaved model is loaded with the given configuration to make the prediction.
+    :param cryptonalysis_config: A configuration object
+    :type cryptonalysis_config: CryptonalysisConfig
+    :param for_date: The date for which to make a transaction prediction.
+    :type for_date: date
+    :return: A dictionary of predictions per classification type. For example:
+    {
+        svc: BUY,
+        mlp: SELL
+    }
+    :rtype: dict
+    """
+    logging.info("Obtaining crypto predictions for {}...".format(for_date))
     crypto_data = get_crypto_data_for_date(cryptonalysis_config.crypto, for_date,
                                            cryptonalysis_config.preprocessing.window_size)
 
@@ -109,7 +138,7 @@ def predict_for_date(cryptonalysis_config, for_date):
     preprocessing_config = cryptonalysis_config.preprocessing
     predictor_cls = preprocessing_config.predictor_cls
     price_column = preprocessing_config.price_column
-    window_size = 50 # preprocessing_config.window_size
+    window_size = preprocessing_config.window_size
     normalize = preprocessing_config.normalize
     normalize_by_row = preprocessing_config.normalize_by_row
 
@@ -117,7 +146,22 @@ def predict_for_date(cryptonalysis_config, for_date):
     preprocessed_data = preprocess_dataframe(crypto_data, cryptonalysis_config.crypto, predictor_cls, price_column,
                                              window_size, normalize, normalize_by_row, run_predictor=False)
 
-    return preprocessed_data
+    # Split dataset for classification
+    X, y = split_dataset(preprocessed_data)
+
+    svc_model = load_model('svc', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+                           cryptonalysis_config.training)
+    mlp_model = load_model('mlp', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+                           cryptonalysis_config.training)
+
+    # Prediction
+    y_pred_svc = get_transaction_type(svc_model.predict(X)[0])
+    y_pred_mlp = get_transaction_type(mlp_model.predict(X)[0])
+
+    return {
+        'svc': y_pred_svc,
+        'mlp': y_pred_mlp
+    }
 
 
 if __name__ == '__main__':
@@ -140,6 +184,7 @@ if __name__ == '__main__':
         run_prediction_simulation(config)
     elif action == 'prediction':
         today = parse_date('today')
-        predict_for_date(config, today)
+        predictions = predict_for_date(config, today)
+        logger.info("Predictions:\n{}".format(predictions))
     else:
         logger.error("Wrong action \"{}\". Must be \"simulation\" or \"prediction\".".format(action))
