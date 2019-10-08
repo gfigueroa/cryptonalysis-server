@@ -1,19 +1,28 @@
+import logging
+import os
 import random
 from abc import ABCMeta, abstractmethod
-from datetime import date
-import logging
-import config
-import os
 
 # Logging
-logging.basicConfig(level=config.LOGGING_LEVEL)
 logger = logging.getLogger()
 
-SAVE_ROI = False
-DATA_FOLDER = os.path.join(os.path.pardir, 'data')
+DUMP_DIR = os.path.join(os.path.pardir, 'dump')
+TRANSACTION_TYPE = {
+    'BUY': 1,
+    'SELL': 0,
+    'UNKNOWN': -1  # Used for pure prediction
+}
 
 
-class CryptoPredictor:
+def get_transaction_type(transaction_value):
+    for transaction, value in TRANSACTION_TYPE.items():
+        if transaction_value == value:
+            return transaction
+
+    raise ValueError("Unknown transaction value {}".format(transaction_value))
+
+
+class CryptoPredictor(object):
     """
     Abstract class CryptoPredictor.
     Predicts what cryptocurrency transaction to perform (buy/sell)
@@ -24,20 +33,21 @@ class CryptoPredictor:
     __metaclass__ = ABCMeta
 
     # Default parameters
-    ENDING_DATE = date.today()
     STARTING_INVESTMENT = 100.0  # USD
     DAILY_ALLOWANCE = 5.0
     LOOKAHEAD_DAYS = 1
+    PROB_BUY = 1
+    PROB_SELL = 1
 
-    def __init__(self, market, starting_date, price_list, window_size, crypto_name, ending_date=None,
-                 starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=1, prob_sell=1):
+    def __init__(self, market, price_list, window_size, crypto_name, starting_date=None, ending_date=None,
+                 starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None):
         """
         CryptoPredictor constructor.
         :param market: An instance of global market parameters
-        :param starting_date: The date from which to start making transactions
         :param price_list: The list of all crypto prices to use for making transactions from the starting date
         :param window_size: The window size to use for making transactions
         :param crypto_name: The cryptocurrency 3-character code (e.g., BTC, ETH, etc.)
+        :param starting_date: The date from which to start making transactions
         :param ending_date: The date in which to stop making transactions (default is today)
         :param starting_investment: The starting investment in fiat
         :param daily_allowance: The daily amount of money (in fiat) that can be invested in making transactions
@@ -57,8 +67,8 @@ class CryptoPredictor:
         self.transactions = []
 
         self.market = market
-        self._starting_date = starting_date
-        self.ending_date = ending_date or CryptoPredictor.ENDING_DATE
+        self._starting_date = starting_date or price_list.index[0].date()  # First date in DataFrame
+        self.ending_date = ending_date or price_list.index[-1].date()  # Last date in DataFrame
         self._window_size = window_size
         self._crypto_name = crypto_name
 
@@ -71,13 +81,13 @@ class CryptoPredictor:
         self.lookahead_days = lookahead_days or CryptoPredictor.LOOKAHEAD_DAYS
 
         # Probabilities (prediction accuracy)
-        if prob_buy < 0 or prob_buy > 1:
+        self.prob_buy = prob_buy or CryptoPredictor.PROB_BUY
+        if self.prob_buy < 0 or self.prob_buy > 1:
             raise ValueError("prob_buy should be a decimal between 0 (inclusive) and 1 (inclusive).")
-        self.prob_buy = prob_buy
 
-        if prob_sell < 0 or prob_sell > 1:
+        self.prob_sell = prob_sell or CryptoPredictor.PROB_SELL
+        if self.prob_sell < 0 or self.prob_sell > 1:
             raise ValueError("prob_sell should be a decimal between 0 (inclusive) and 1 (inclusive).")
-        self.prob_sell = prob_sell
 
     def get_transaction_tuple(self, prices, current_price, future_prices):
         """
@@ -218,9 +228,11 @@ class CryptoPredictor:
             "{0} - {1} {2} (${3})".format('BUY' if buy else 'SELL', self._crypto_name, round(crypto_amount, 4),
                                           round(fiat_amount, 2)))
 
-    def run_predictor(self):
+    def run_predictor(self, save_roi=False):
         """
         Run the predictor, which will calculate cash and crypto amounts daily based on the transaction strategy.
+        :param save_roi: Whether or not to save the ROI of this predictor run in a file
+        :type save_roi: bool
         :return: a list of dictionaries with prices (training attributes) and transaction (class buy/sell)
         Example: [{[price1, price2, price3, ...], transaction: 'BUY'}, ...]
         """
@@ -234,7 +246,10 @@ class CryptoPredictor:
         # Start trading
         logger.info("Running predictor for {0}...".format(self.__class__.__name__))
         logger.info("Predictor parameters:\nStarting investment: ${0}, Daily allowance: ${1}, "
-                    "Lookahead days: {2}".format(self.starting_investment, self.daily_allowance, self.lookahead_days))
+                    "Lookahead days: {2}, Prob buy: {3}, Prob sell: {4}".format(self.starting_investment,
+                                                                                self.daily_allowance,
+                                                                                self.lookahead_days,
+                                                                                self.prob_buy, self.prob_sell))
         logger.info("Start date: {0}".format(self._starting_date))
 
         # First crypto purchase
@@ -272,13 +287,59 @@ class CryptoPredictor:
 
         logger.info("Finished running predictor")
         logger.info("End date: {0}".format(self._price_list.index[stop_day]))
-        self._sell_all_crypto(current_price)  # Sell everything
+        self._sell_all_crypto(current_price, save_roi)  # Sell everything
 
         return self.transactions
 
-    def _sell_all_crypto(self, current_price):
+    def run_transaction_simulation(self, transactions):
+        """
+        Run a transaction simulation given a list of transactions to perform per day.
+        :param transactions: a list of transactions (as ints) to perform on the given daily prices.
+        :type transactions: list of int
+        """
+
+        # Initial conditions
+        self.total_investment = self.starting_investment
+        self.cash = self.starting_investment
+        self.owned_crypto = 0
+
+        # Start trading
+        logger.info("Running transaction simulation...")
+        logger.info("Predictor parameters:\nStarting investment: ${0}, Daily allowance: ${1}".format(
+            self.starting_investment, self.daily_allowance))
+
+        # First crypto purchase
+        day = 0
+        current_price = self._price_list[day]
+        self.perform_transaction(True, self.get_max_crypto_transaction(True, current_price), current_price)
+
+        for price, transaction in zip(self._price_list, transactions):
+            logger.debug("Day {0} - {1}".format(day, self._price_list.index[day]))
+
+            crypto_amount, fiat_amount = self.buy(price) \
+                if get_transaction_type(transaction) == 'BUY' else self.sell(price)
+            # Ignore for transactions less than or close to a minimum crypto/fiat transaction
+            if crypto_amount < self.market.min_transaction_size_crypto or \
+                    round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
+                crypto_amount = 0
+
+            self.perform_transaction(get_transaction_type(transaction) == 'BUY', crypto_amount, price)
+
+            # End of the day allowance
+            self.cash += self.daily_allowance
+            self.total_investment += self.daily_allowance
+
+            day += 1
+
+        logger.info("Finished running transaction simulation")
+        logger.info("End date: {0}".format(self._price_list.index[-1]))
+        self._sell_all_crypto(current_price, False)  # Sell everything
+
+    def _sell_all_crypto(self, current_price, save_roi):
         """
         Sell all crypto in wallet given the current price.
+        :param save_roi: Whether or not to save the ROI of this predictor run in a file
+        :type save_roi: bool
         :param current_price: The current price (in fiat) of the crypto
         """
 
@@ -299,11 +360,33 @@ class CryptoPredictor:
         logger.info("*" * 20)
 
         # Save ROI
-        if SAVE_ROI:
-            with open(os.path.join(DATA_FOLDER, 'roi.txt'), 'a') as f:
-                line = "${} - {} ({}) (p_buy={}, p_sell={})\n".format(round(roi, 2), self.__class__.__name__,
-                                                                      self._starting_date, self.prob_buy,
-                                                                      self.prob_sell)
+        if save_roi:
+            if not os.path.exists(DUMP_DIR):
+                os.mkdir(DUMP_DIR)
+            file_name = "roi_b{}_s{}.csv".format(self.prob_buy, self.prob_sell)
+            file_exists = os.path.isfile(os.path.join(DUMP_DIR, file_name))
+            with open(os.path.join(DUMP_DIR, file_name), 'a') as f:
+                col_names = ['crypto', 'roi', 'predictor', 'start_date', 'end_date', 'prob_buy', 'prob_sell',
+                             'lookahead']
+                col_vals = [self._crypto_name, round(roi, 2), self.__class__.__name__, self._starting_date,
+                            self.ending_date, self.prob_buy, self.prob_sell, self.lookahead_days]
+
+                # Write headers
+                if not file_exists:
+                    f.write("{}\n".format(','.join(col_names)))
+
+                line = ','.join([str(val) for val in col_vals]) + '\n'
+                '''
+                line = \
+                    "({}) ${} - {} ({} - {}) (p_buy={}, p_sell={}, lookahead={})\n".format(self._crypto_name,
+                                                                                           round(roi, 2),
+                                                                                           self.__class__.__name__,
+                                                                                           self._starting_date,
+                                                                                           self.ending_date,
+                                                                                           self.prob_buy,
+                                                                                           self.prob_sell,
+                                                                                           self.lookahead_days)
+                '''
                 f.write(line)
 
 
@@ -443,3 +526,27 @@ class GreedyPredictor(CryptoPredictor):
         """
         transaction = 'BUY'
         return transaction
+
+
+def get_predictor_class_from_name(predictor_cls_name):
+    """
+    Get a CryptoPredictor subclass given a class name.
+    :param predictor_cls_name
+    :type predictor_cls_name: str
+    :return: A class object belonging to the required predictor class
+    :rtype: type
+    """
+    if predictor_cls_name == 'BiffPredictor':
+        return BiffPredictor
+    elif predictor_cls_name == 'BiffPredictorSmart':
+        return BiffPredictorSmart
+    elif predictor_cls_name == 'ReverseBiffPredictor':
+        return ReverseBiffPredictor
+    elif predictor_cls_name == 'LazyPredictor':
+        return LazyPredictor
+    elif predictor_cls_name == 'RandomPredictor':
+        return RandomPredictor
+    elif predictor_cls_name == 'GreedyPredictor':
+        return GreedyPredictor
+    else:
+        raise TypeError("CryptoPredictor subclass '{}' does not exist.".format(predictor_cls_name))

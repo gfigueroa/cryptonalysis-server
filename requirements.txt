@@ -43,6 +43,7 @@ ipython-genutils==0.2.0
 ipywidgets==6.0.0
 itsdangerous==0.24
 Jinja2==2.10.1
+joblib==0.13.2
 jsonschema==2.6.0
 jupyter==1.0.0
 jupyter-client==5.0.1
@@ -51,6 +52,7 @@ jupyter-core==4.4.0
 jupyterthemes==0.18.3
 keras==2.2.4
 lesscpy==0.13.0
+lxml==4.4.0
 Mako==1.0.7
 MarkupSafe==1.0
 matplotlib==2.1.2
@@ -72,6 +74,7 @@ pip==9.0.1
 ply==3.10
 prompt-toolkit==1.0.14
 psycopg2==2.7.4
+pyhocon==0.3.35
 Pygments==2.2.0
 pyparsing==2.2.0
 python-dateutil==2.6.1
