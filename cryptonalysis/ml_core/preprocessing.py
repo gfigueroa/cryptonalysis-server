@@ -2,11 +2,12 @@ import logging
 import os
 import pandas as pd
 import sys
-from config import load_cryptonalysis_config_grid, PreprocessingConfig, CryptonalysisConfigGrid
+from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingConfig, CryptonalysisConfigGrid
+from datetime import date
 from market import market
 from pandas import DataFrame, to_datetime
 from sklearn.preprocessing import StandardScaler
-from transaction_builders import TRANSACTION_TYPE
+from transaction_builders import TRANSACTION_TYPE, BiffPredictor
 
 # Logging
 logger = logging.getLogger()
@@ -109,7 +110,7 @@ def build_transactions_df(transactions):
     [{'transaction': 'TRANSACTION_TYPE', 'prices': [price1, price2, ...]}, ...]
     :type transactions: list of dict
     :return: A DataFrame with N price columns and a transaction column (1=BUY, 0=SELL, -1=UNKNOWN)
-    :rtype: pd.DataFrame
+    :rtype: DataFrame
     """
 
     logger.info("Getting transactions DataFrame...")
@@ -141,6 +142,7 @@ def normalize_df(df, by_row):
     :param by_row: If True, normalizes by row using feature scaling, if False, uses scikit-learn's FeatureScaler, which
     scales by column and using variance.
     :return: A new DataFrame with each row normalized
+    :rtype: DataFrame
     """
 
     logger.info("Normalizing data...")
@@ -164,10 +166,14 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     """
     Get the path and filename used for the data file containing the preprocessed data based on the preprocessing
     parameters.
-    An example value returned would be '../data/pre_ETH_ProbabilityPredictor_2018-01-01-2018-07-10_win30_norm_col'.
-    An example filename would be 'pre_ProbabilityPredictor_2018-01-01-2018-07-10_win30_norm_col.csv', meaning the data
-    was obtained using the ProbabilityPredictor, using historical data from 2018-01-01 to 2018-07-10, a window size of
-    30, and normalization by column.
+
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, True, False, 1, 1)
+    '../master_data/pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_col_b1s1.csv'
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, False, 1, 1)
+    '../master_data/pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, True, 1, 1)
+    '../master_data/pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
+
     :param crypto_name
     :type crypto_name: str
     :param predictor_class: The class used to build transactions (default is BiffPredictor)
@@ -183,6 +189,8 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     when it actually has to buy.
     :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
     when it actually has to sell.
+    :return A string with the name of a preprocessed data file given a series of config parameters
+    :rtype: str
     """
     norm_string = '_norm_{0}'.format('row' if normalize_by_row else 'col') if normalize else ''
     filename = 'pre_{0}_{1}({2})_{3}-{4}_win{5}{6}_b{7}s{8}.csv'.format(crypto_name, predictor_class.__name__,
@@ -214,7 +222,8 @@ def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, 
     when it actually has to buy.
     :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
     when it actually has to sell.
-    :return:
+    :return: a DataFrame
+    :rtype: DataFrame
     """
     preprocessed_data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date,
                                                    ending_date, window_size, normalize, normalize_by_row, prob_buy,
@@ -264,7 +273,7 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     The preprocessing, by default, runs a `CryptoPredictor`, which is necessary for training and testing models.
     This step can be skipped when only daily prediction is required.
     :param df: The DataFrame containing the unprocessed cryptocurrency data
-    :type df: pd.DataFrame
+    :type df: DataFrame
     :param crypto_name
     :type crypto_name: str
     :param predictor_cls: The class used to build transactions (default is BiffPredictor)
@@ -292,7 +301,7 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     :param run_predictor: Whether or not to run the `CryptoPredictor` specified in the `predictor_cls` parameter.
     :type run_predictor: bool
     :return: A preprocessing DataFrame containing daily transactions in the last column.
-    :rtype: pd.DataFrame
+    :rtype: DataFrame
     """
 
     price_list = get_price_list(df, price_column)

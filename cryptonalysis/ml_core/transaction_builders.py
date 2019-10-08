@@ -15,6 +15,21 @@ TRANSACTION_TYPE = {
 
 
 def get_transaction_type(transaction_value):
+    """
+    Get a transaction type as a string (e.g. BUY, SELL, UNKNOWN) given a transaction value using the TRANSACTION_TYPE
+    constant dictionary.
+
+    >>> get_transaction_type(0)
+    'SELL'
+    >>> get_transaction_type(1)
+    'BUY'
+    >>> get_transaction_type(-1)
+    'UNKNOWN'
+
+    :param transaction_value
+    :type transaction_value: int
+    :return:
+    """
     for transaction, value in TRANSACTION_TYPE.items():
         if transaction_value == value:
             return transaction

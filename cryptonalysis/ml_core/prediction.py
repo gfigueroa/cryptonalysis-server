@@ -1,12 +1,12 @@
 import logging
 import numpy as np
 import os
-import pandas as pd
 import sys
-from config import load_cryptonalysis_config, CryptonalysisConfig
+from cryptonalysis.config import load_cryptonalysis_config, CryptonalysisConfig
 from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from cryptonalysis.utils.misc_utils import parse_date
 from market import market
+from pandas import DataFrame
 from preprocessing import get_historical_df, preprocess_dataframe, CRYPTOCURRENCIES, MASTER_DATA_DIR, \
     get_price_list
 from training import load_model
@@ -24,9 +24,9 @@ def split_dataset(df):
     """
     Split the DataFrame into an attribute vector X and a target vector y.
     :param df: The DataFrame to split
-    :type df: pd.DataFrame
+    :type df: DataFrame
     :return: a tuple of attribute and target vectors (X, y)
-    :rtype: (pd.DataFrame, pd.DataFrame)
+    :rtype: (DataFrame, DataFrame)
     """
     X = df.iloc[:, :-1]
     y = df['transaction']

@@ -1,11 +1,11 @@
 import logging
 import numpy as np
 import os
-import pandas as pd
 import sys
-from config import load_cryptonalysis_config_grid, PreprocessingConfig, TrainingConfig, CryptonalysisConfigGrid
+from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingConfig, TrainingConfig, CryptonalysisConfigGrid
 from datetime import datetime
 from joblib import dump, load
+from pandas import DataFrame
 from preprocessing import run_preprocessing_pipeline
 from sklearn import svm
 from sklearn.metrics import classification_report, accuracy_score
@@ -30,7 +30,7 @@ def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5):
     is used for finding the best hyperparameter values, and the evaluation data is used
     to test a model with those values (and avoid overfitting).
     :param df: The DataFrame to split
-    :type df: pd.DataFrame
+    :type df: DataFrame
     :param shuffle: Whether or not to shuffle the rows of the DF (TODO: use in time series?)
     :type shuffle: bool
     :param training_size: (default: 0.7) The size (0~1) of the training dataset (used in non-CV)
@@ -38,8 +38,8 @@ def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5):
     :param dev_size: (default: 0.5) The size (0~1) of the development dataset (used in Grid Search CV)
     :type dev_size: float
     :return: a tuple with different splits for the given DataFrame
-    :rtype: (pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame,
-             pd.DataFrame, pd.DataFrame, pd.DataFrame)
+    :rtype: (DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame,
+             DataFrame, DataFrame, DataFrame)
     """
     if shuffle:
         shuffled_df = df.sample(frac=1)
@@ -264,7 +264,7 @@ def save_models(classifiers, crypto, preprocessing_config, training_config):
 
 def load_model(classifier, crypto, preprocessing_config, training_config):
     """
-    Save trained models to a file.
+    Load trained model from a file.
     :param classifier: name of the classifier whose model will be loaded, such as 'svc' or 'mlp'
     :type classifier: str
     :param crypto: The name of the crypto
@@ -273,6 +273,7 @@ def load_model(classifier, crypto, preprocessing_config, training_config):
     :type preprocessing_config: PreprocessingConfig
     :param training_config
     :type training_config: TrainingConfig
+    :return A trained model
     """
     file_name = get_model_name(classifier, crypto, preprocessing_config, training_config)
     logger.info("Loading model {}...".format({file_name}))
@@ -283,7 +284,32 @@ def load_model(classifier, crypto, preprocessing_config, training_config):
 
 def get_model_name(classifier, crypto, preprocessing_config, training_config):
     """
-    Get a string with the name of the trained model to save/load.
+    Get a string with the name of the trained model to save/load given preprocessing and training configurations.
+
+    >>> get_model_name('svc', 'LTC',
+    ...     PreprocessingConfig(
+    ...     {
+    ...         'window_size': 60,
+    ...         'predictor_params': {
+    ...             'lookahead_days': 3, 'prob_buy': 1, 'prob_sell': 1, 'starting_investment': 100, 'daily_allowance': 5
+    ...         },
+    ...         'start_date': '2018-01-01',
+    ...         'end_date': '2019-05-04',
+    ...         'price_column': 'Close',
+    ...         'normalize': True,
+    ...         'normalize_by_row': True,
+    ...         'predictor_cls': 'BiffPredictor',
+    ...     }),
+    ...     TrainingConfig(
+    ...     {
+    ...         'dev_size': 0.5,
+    ...         'shuffle_data': True,
+    ...         'training_size': 0.7,
+    ...         'cv_folds': 4
+    ...     })
+    ... )
+    'svc_LTC_2019-05-04TrueTrueBiffPredictor5311100Close2018-01-0160_40.5True0.7.joblib'
+
     :param classifier: The classifier name
     :type classifier: str
     :param crypto: The crypto name
