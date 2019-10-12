@@ -74,17 +74,14 @@ def get_aggregated_dfs(historical_df):
     return daily_df, weekly_df, monthly_df
 
 
-def get_price_list(df, price_column, window_size=None, lookahead_days=None):
+def get_price_list(df, price_column):
     """
     Get a DataFrame with a single column of prices given a composite DataFrame and the name of the price column to
     consider.
-    There are two optional parameters `window_size` and `lookahead_days` to cut the price list accordingly.
     :param df: The original cryptocurrency DataFrame.
     :type df: DataFrame
     :param price_column: The name of the column containing the crypto price to consider.
     :type price_column: str
-    :param window_size: The window size to use for making transactions
-    :param lookahead_days: The number of days to look ahead when making a transaction
     :return: A DataFrame containing a single column with cryptocurrency prices
     :rtype: DataFrame
     """
@@ -94,11 +91,6 @@ def get_price_list(df, price_column, window_size=None, lookahead_days=None):
 
     # Get transaction data
     price_list = daily_df[price_column]
-
-    if window_size:
-        price_list = price_list[window_size - 1:]  # Remove first window_size prices
-    if lookahead_days:
-        price_list = price_list[:-lookahead_days]
 
     return price_list
 

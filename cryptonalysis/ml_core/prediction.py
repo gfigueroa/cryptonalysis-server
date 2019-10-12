@@ -97,14 +97,14 @@ def run_prediction_simulation(cryptonalysis_config):
         logger.info("Evaluation accuracy (MLP): {}\n".format(accuracy))
 
         # Run transactions to calculate ROI
-        prices = get_price_list(df, price_column, window_size, lookahead_days)
+        prices = get_price_list(df, price_column)
         predictor = predictor_cls(market, prices, window_size, cryptonalysis_config.crypto, starting_date=None,
                                   ending_date=None, starting_investment=starting_investment,
                                   daily_allowance=daily_allowance, lookahead_days=lookahead_days)
 
-        logger.info("Prediction simulation for SVC...")
+        logger.info("Transaction simulation for SVC...")
         predictor.run_transaction_simulation(y_pred_svc.tolist())
-        logger.info("Prediction simulation for MLP...")
+        logger.info("Transaction simulation for MLP...")
         predictor.run_transaction_simulation(y_pred_mlp.tolist())
 
         logger.info("Prediction simulation complete!\n")
