@@ -160,11 +160,11 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     parameters.
 
     >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, True, False, 1, 1)
-    '../master_data/pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_col_b1s1.csv'
+    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_col_b1s1.csv'
     >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, False, 1, 1)
-    '../master_data/pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
+    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
     >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, True, 1, 1)
-    '../master_data/pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
+    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
 
     :param crypto_name
     :type crypto_name: str
@@ -188,8 +188,7 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     filename = 'pre_{0}_{1}({2})_{3}-{4}_win{5}{6}_b{7}s{8}.csv'.format(crypto_name, predictor_class.__name__,
                                                                         lookahead_days, starting_date, ending_date,
                                                                         window_size, norm_string, prob_buy, prob_sell)
-    file_path = os.path.join(MASTER_DATA_DIR, filename)
-    return file_path
+    return filename
 
 
 def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
@@ -217,13 +216,13 @@ def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, 
     :return: a DataFrame
     :rtype: DataFrame
     """
-    preprocessed_data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date,
-                                                   ending_date, window_size, normalize, normalize_by_row, prob_buy,
-                                                   prob_sell)
-    if os.path.isfile(preprocessed_data_filename):
+    data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
+                                      window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+    data_file_path = os.path.join(MASTER_DATA_DIR, data_filename)
+    if os.path.isfile(data_file_path):
         logger.info("Preprocessed datafile '{0}'' already exists. "
-                    "Loading file and skipping preprocessing pipeline...".format(preprocessed_data_filename))
-        transactions_df = pd.read_csv(preprocessed_data_filename)
+                    "Loading file and skipping preprocessing pipeline...".format(data_file_path))
+        transactions_df = pd.read_csv(data_file_path)
         return transactions_df
     else:
         return None
@@ -251,8 +250,9 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
     when it actually has to sell.
     """
 
-    data_file_path = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                                       window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+    data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
+                                      window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+    data_file_path = os.path.join(MASTER_DATA_DIR, data_filename)
     logger.info("Saving data to file '{0}'".format(data_file_path))
     transactions_df.to_csv(data_file_path, index=False)
 
