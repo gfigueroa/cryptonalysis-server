@@ -162,7 +162,7 @@ class TestCryptoPredictor(unittest.TestCase):
 
 class TestCryptoPredictorImplementations(unittest.TestCase):
     """
-    Test CryptoPredictor implementations and their functionalities.
+    Test CryptoPredictor implementations and their functionality.
     """
 
     def __init__(self, *args, **kwargs):
@@ -170,18 +170,10 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
         self.config = load_cryptonalysis_config(RES_DIR, CONFIG_TEST)
         self.biff_predictor = \
             BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
-        self.biff_predictor = \
-            BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
         self.biff_predictor_smart = \
             BiffPredictorSmart(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
         self.reverse_biff_predictor = \
             ReverseBiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
-        self.lazy_predictor = \
-            LazyPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
-        self.random_predictor = \
-            RandomPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
-        self.greedy_predictor = \
-            GreedyPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
 
     def test_biff_predictor(self):
         """
@@ -190,7 +182,7 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
         """
         self.biff_predictor.reset_predictor_state()
 
-        # Run Predictor
+        # Run Predictor with default parameters
         self.biff_predictor.run_predictor()
         self.assertEqual(self.biff_predictor.owned_crypto, 0)  # All crypto sold at the end
         self.assertAlmostEqual(self.biff_predictor.cash, 1089.51665, 5)
@@ -201,4 +193,78 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
                                  'SELL', 'SELL', 'BUY']
         self.assertListEqual(actual_transactions, expected_transactions)
 
-        # Transaction Simulation
+        # Run Predictor with lookahead days=2
+        modified_biff_predictor = BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
+                                                crypto_name=CRYPTO_NAME, lookahead_days=2)
+        modified_biff_predictor.run_predictor()
+        self.assertEqual(modified_biff_predictor.owned_crypto, 0)  # All crypto sold at the end
+        self.assertAlmostEqual(modified_biff_predictor.cash, 789.19383, 5)
+        self.assertEqual(modified_biff_predictor.total_investment, 170)
+        self.assertEqual(len(modified_biff_predictor.transactions), 14)
+        actual_transactions = [t['transaction'] for t in modified_biff_predictor.transactions]
+        expected_transactions = ['SELL', 'BUY', 'BUY', 'BUY', 'SELL', 'SELL', 'BUY', 'BUY', 'BUY', 'SELL', 'SELL',
+                                 'SELL', 'SELL', 'SELL']
+        self.assertListEqual(actual_transactions, expected_transactions)
+
+    def test_biff_predictor_smart(self):
+        """
+        Test non-idempotent methods in the CryptoPredictor class (with effects on state variables).
+        These tests are done with the initial conditions of the class.
+        """
+        self.biff_predictor_smart.reset_predictor_state()
+
+        # Run Predictor with default parameters
+        self.biff_predictor_smart.run_predictor()
+        self.assertEqual(self.biff_predictor_smart.owned_crypto, 0)  # All crypto sold at the end
+        self.assertAlmostEqual(self.biff_predictor_smart.cash, 1089.51665, 5)
+        self.assertEqual(self.biff_predictor_smart.total_investment, 175)
+        self.assertEqual(len(self.biff_predictor_smart.transactions), 15)
+        actual_transactions = [t['transaction'] for t in self.biff_predictor_smart.transactions]
+        expected_transactions = ['SELL', 'BUY', 'BUY', 'BUY', 'BUY', 'SELL', 'BUY', 'BUY', 'BUY', 'BUY', 'SELL', 'SELL',
+                                 'SELL', 'SELL', 'BUY']
+        self.assertListEqual(actual_transactions, expected_transactions)
+
+        # Run Predictor with lookahead days=2
+        modified_biff_predictor_smart = BiffPredictorSmart(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
+                                                           crypto_name=CRYPTO_NAME, lookahead_days=2)
+        modified_biff_predictor_smart.run_predictor()
+        self.assertEqual(modified_biff_predictor_smart.owned_crypto, 0)  # All crypto sold at the end
+        self.assertAlmostEqual(modified_biff_predictor_smart.cash, 1106.42608, 5)
+        self.assertEqual(modified_biff_predictor_smart.total_investment, 170)
+        self.assertEqual(len(modified_biff_predictor_smart.transactions), 14)
+        actual_transactions = [t['transaction'] for t in modified_biff_predictor_smart.transactions]
+        expected_transactions = ['SELL', 'BUY', 'BUY', 'BUY', 'BUY', 'SELL', 'BUY', 'BUY', 'BUY', 'BUY', 'SELL', 'SELL',
+                                 'SELL', 'SELL']
+        self.assertListEqual(actual_transactions, expected_transactions)
+
+    def test_reverse_biff_predictor(self):
+        """
+        Test non-idempotent methods in the CryptoPredictor class (with effects on state variables).
+        These tests are done with the initial conditions of the class.
+        """
+        self.reverse_biff_predictor.reset_predictor_state()
+
+        # Run Predictor with default parameters
+        self.reverse_biff_predictor.run_predictor()
+        self.assertEqual(self.reverse_biff_predictor.owned_crypto, 0)  # All crypto sold at the end
+        self.assertAlmostEqual(self.reverse_biff_predictor.cash, 72.53854, 5)
+        self.assertEqual(self.reverse_biff_predictor.total_investment, 175)
+        self.assertEqual(len(self.reverse_biff_predictor.transactions), 15)
+        actual_transactions = [t['transaction'] for t in self.reverse_biff_predictor.transactions]
+        expected_transactions = ['BUY', 'SELL', 'SELL', 'SELL', 'SELL', 'BUY', 'SELL', 'SELL', 'SELL', 'SELL', 'BUY',
+                                 'BUY', 'BUY', 'BUY', 'SELL']
+        self.assertListEqual(actual_transactions, expected_transactions)
+
+        # Run Predictor with lookahead days=2
+        modified_reverse_biff_predictor = ReverseBiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
+                                                               crypto_name=CRYPTO_NAME, lookahead_days=2)
+        modified_reverse_biff_predictor.run_predictor()
+        self.assertEqual(modified_reverse_biff_predictor.owned_crypto, 0)  # All crypto sold at the end
+        self.assertAlmostEqual(modified_reverse_biff_predictor.cash, 99.60801, 5)
+        self.assertEqual(modified_reverse_biff_predictor.total_investment, 170)
+        self.assertEqual(len(modified_reverse_biff_predictor.transactions), 14)
+        actual_transactions = [t['transaction'] for t in modified_reverse_biff_predictor.transactions]
+        expected_transactions = ['BUY', 'SELL', 'SELL', 'SELL', 'BUY', 'BUY', 'SELL', 'SELL', 'SELL', 'BUY', 'BUY',
+                                 'BUY', 'BUY', 'BUY']
+        self.assertListEqual(actual_transactions, expected_transactions)
+

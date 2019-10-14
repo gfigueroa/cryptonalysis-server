@@ -495,7 +495,7 @@ class BiffPredictorSmart(CryptoPredictor):
         """
 
         # Strategy 1
-        avg_future_price = sum(future_prices) / len(future_prices)
+        avg_future_price = sum(future_prices) / float(len(future_prices))
 
         # Strategy 2
         future_prices = list(future_prices)
@@ -505,7 +505,7 @@ class BiffPredictorSmart(CryptoPredictor):
             price_differences.append(future_prices[i + 1] - future_prices[i])
         s = sum(price_differences)
 
-        if current_price <= avg_future_price:
+        if avg_future_price > current_price:
             return 'BUY'
         else:
             return 'SELL'
