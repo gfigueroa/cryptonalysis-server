@@ -2,7 +2,8 @@ import logging
 import numpy as np
 import os
 import sys
-from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingConfig, TrainingConfig, CryptonalysisConfigGrid
+from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingConfig, TrainingConfig, \
+    CryptonalysisConfigGrid
 from datetime import datetime
 from joblib import dump, load
 from pandas import DataFrame

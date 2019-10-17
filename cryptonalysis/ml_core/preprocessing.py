@@ -5,7 +5,7 @@ import sys
 from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingConfig, CryptonalysisConfigGrid
 from datetime import date
 from market import market
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame, to_datetime, Series
 from sklearn.preprocessing import StandardScaler
 from transaction_builders import TRANSACTION_TYPE, BiffPredictor
 
@@ -53,7 +53,8 @@ def get_historical_df(historical_file):
 
 def get_aggregated_dfs(historical_df):
     """
-    Get time aggregated (daily, weekly, and monthly) DataFrames from historical DF.
+    Get time aggregated (daily, weekly, and monthly) DataFrames from historical DF. The rows for each grouping are
+    aggregated using the mean of numerical columns.
     :param historical_df: The historical DF to aggregate
     :type historical_df: DataFrame
     :return: a tuple of the form (DataFrame, DataFrame, DataFrame), containing a daily DF, weekly DF, and monthly DF,
@@ -82,8 +83,8 @@ def get_price_list(df, price_column):
     :type df: DataFrame
     :param price_column: The name of the column containing the crypto price to consider.
     :type price_column: str
-    :return: A DataFrame containing a single column with cryptocurrency prices
-    :rtype: DataFrame
+    :return: A Series containing cryptocurrency prices
+    :rtype: Series
     """
 
     # Get aggregated DFs
@@ -107,9 +108,8 @@ def build_transactions_df(transactions):
 
     logger.info("Getting transactions DataFrame...")
 
-    prices = list(transactions[0]['prices'])
-
     # Price columns
+    prices = list(transactions[0]['prices'])  # Get first list of prices to obtain length
     df_columns = ["price {0}".format(column_name) for column_name in range(1, len(prices) + 1)]
     df_columns.append('transaction')
 
@@ -119,6 +119,8 @@ def build_transactions_df(transactions):
         transaction = TRANSACTION_TYPE[transactions[row]['transaction']]
         df.loc[row] = prices + [transaction]
 
+    date_index = [t['prices'].index[-1] for t in transactions]  # Use last date of each transaction
+    df.index = pd.DatetimeIndex(date_index)
     df['transaction'] = df['transaction'].astype(int)
 
     return df

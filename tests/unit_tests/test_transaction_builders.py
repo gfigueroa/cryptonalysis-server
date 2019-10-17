@@ -4,14 +4,9 @@ Unit tests for the transaction_builders.py module.
 
 import pandas as pd
 import unittest
-from cryptonalysis.config import load_cryptonalysis_config
-from cryptonalysis.ml_core.transaction_builders import BiffPredictor, BiffPredictorSmart, ReverseBiffPredictor,\
-    LazyPredictor, RandomPredictor, GreedyPredictor
 from cryptonalysis.ml_core.market import market
+from cryptonalysis.ml_core.transaction_builders import BiffPredictor, BiffPredictorSmart, ReverseBiffPredictor
 from pandas import Series
-
-RES_DIR = 'tests/resources'
-CONFIG_TEST = 'config_test.conf'
 
 
 # Constants for tests
@@ -32,7 +27,6 @@ class TestCryptoPredictor(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestCryptoPredictor, self).__init__(*args, **kwargs)
-        self.config = load_cryptonalysis_config(RES_DIR, CONFIG_TEST)
         self.default_predictor = \
             BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
 
@@ -167,7 +161,6 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestCryptoPredictorImplementations, self).__init__(*args, **kwargs)
-        self.config = load_cryptonalysis_config(RES_DIR, CONFIG_TEST)
         self.biff_predictor = \
             BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
         self.biff_predictor_smart = \
@@ -267,4 +260,3 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
         expected_transactions = ['BUY', 'SELL', 'SELL', 'SELL', 'BUY', 'BUY', 'SELL', 'SELL', 'SELL', 'BUY', 'BUY',
                                  'BUY', 'BUY', 'BUY']
         self.assertListEqual(actual_transactions, expected_transactions)
-
