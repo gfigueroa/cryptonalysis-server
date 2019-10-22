@@ -56,6 +56,7 @@ def run_prediction_simulation(cryptonalysis_config):
         window_size = preprocessing_config.window_size
         normalize = preprocessing_config.normalize
         normalize_by_row = preprocessing_config.normalize_by_row
+        standardize = preprocessing_config.standardize
 
         # Predictor parameters
         lookahead_days = preprocessing_config.predictor_params['lookahead_days']
@@ -64,8 +65,9 @@ def run_prediction_simulation(cryptonalysis_config):
 
         # Preprocess the data
         preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto, predictor_cls, price_column,
-                                                 window_size, normalize, normalize_by_row, starting_date=None,
-                                                 ending_date=None, starting_investment=starting_investment,
+                                                 window_size, normalize, normalize_by_row, standardize,
+                                                 starting_date=None, ending_date=None,
+                                                 starting_investment=starting_investment,
                                                  daily_allowance=daily_allowance, lookahead_days=lookahead_days)
     except Exception as e:
         logger.error("Error in preprocessing pipeline! Skipping...")
@@ -141,10 +143,11 @@ def predict_for_date(cryptonalysis_config, for_date):
     window_size = preprocessing_config.window_size
     normalize = preprocessing_config.normalize
     normalize_by_row = preprocessing_config.normalize_by_row
+    standardize = preprocessing_config.standardize
 
     # Preprocess the data
     preprocessed_data = preprocess_dataframe(crypto_data, cryptonalysis_config.crypto, predictor_cls, price_column,
-                                             window_size, normalize, normalize_by_row, run_predictor=False)
+                                             window_size, normalize, normalize_by_row, standardize, run_predictor=False)
 
     # Split dataset for classification
     X, y = split_dataset(preprocessed_data)

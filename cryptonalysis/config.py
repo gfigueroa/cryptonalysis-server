@@ -42,7 +42,8 @@ class PreprocessingConfig(Config):
     END_DATE = misc_utils.parse_date('today')  # The date in which to end historical data preprocessing
     WINDOW_SIZE = 10  # The window size in days used by the predictor (for sliding window training technique)
     NORMALIZE = True  # Whether or not to normalize the historical data
-    NORMALIZE_BY_ROW = False  # Normalize by row using feature scaling or use scikit-learn's FeatureScaler
+    NORMALIZE_BY_ROW = True  # Normalize by row (by column if False)
+    STANDARDIZE = False  # Use StandardScaler for normalization (use MinMaxScaler if False)
     PRICE_COLUMN = 'Close'  # The column in the historical dataset used for training and testing
     PREDICTOR_CLS = get_predictor_class_from_name('BiffPredictor')  # The class used to build transactions
     PREDICTOR_PARAMS = {
@@ -85,6 +86,10 @@ class PreprocessingConfig(Config):
         self.normalize_by_row = preprocessing_config_dict['normalize_by_row'] = \
             preprocessing_config_dict['normalize_by_row'] \
             if 'normalize_by_row' in preprocessing_config_dict else PreprocessingConfig.NORMALIZE_BY_ROW
+
+        self.standardize = preprocessing_config_dict['standardize'] = \
+            preprocessing_config_dict['standardize'] \
+            if 'standardize' in preprocessing_config_dict else PreprocessingConfig.STANDARDIZE
 
         self.price_column = preprocessing_config_dict['price_column'] = preprocessing_config_dict['price_column'] \
             if 'price_column' in preprocessing_config_dict else PreprocessingConfig.PRICE_COLUMN

@@ -278,9 +278,11 @@ def load_model(classifier, crypto, preprocessing_config, training_config):
     """
     file_name = get_model_name(classifier, crypto, preprocessing_config, training_config)
     logger.info("Loading model {}...".format({file_name}))
-    model = load(os.path.join(MODELS_DIR, file_name))
-
-    return model
+    try:
+        model = load(os.path.join(MODELS_DIR, file_name))
+        return model
+    except IOError:
+        raise ValueError("Model with name '{}' not found!".format(file_name))
 
 
 def get_model_name(classifier, crypto, preprocessing_config, training_config):
@@ -299,6 +301,7 @@ def get_model_name(classifier, crypto, preprocessing_config, training_config):
     ...         'price_column': 'Close',
     ...         'normalize': True,
     ...         'normalize_by_row': True,
+    ...         'standardize': False,
     ...         'predictor_cls': 'BiffPredictor',
     ...     }),
     ...     TrainingConfig(
@@ -309,7 +312,7 @@ def get_model_name(classifier, crypto, preprocessing_config, training_config):
     ...         'cv_folds': 4
     ...     })
     ... )
-    'svc_LTC_2019-05-04TrueTrueBiffPredictor5311100Close2018-01-0160_40.5True0.7.joblib'
+    'svc_LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7.joblib'
 
     :param classifier: The classifier name
     :type classifier: str

@@ -171,16 +171,22 @@ def normalize_df(df, by_row, standardize=False):
 
 
 def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
-                      normalize_by_row, prob_buy, prob_sell):
+                      normalize_by_row, standardize, prob_buy, prob_sell):
     """
     Get the path and filename used for the data file containing the preprocessed data based on the preprocessing
     parameters.
 
-    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, True, False, 1, 1)
-    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_col_b1s1.csv'
-    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, False, 1, 1)
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, True, False, False, 1, 1)
+    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_col_minmax_b1s1.csv'
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, True, True, False, 1, 1)
+    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_row_minmax_b1s1.csv'
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, True, False, True, 1, 1)
+    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_col_std_b1s1.csv'
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, True, True, True, 1, 1)
+    'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_norm_row_std_b1s1.csv'
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, False, True, 1, 1)
     'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
-    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, True, 1, 1)
+    >>> get_data_filename('ETH', BiffPredictor, 1, date(2018, 1, 1), date(2018, 7, 10), 30, False, True, True, 1, 1)
     'pre_ETH_BiffPredictor(1)_2018-01-01-2018-07-10_win30_b1s1.csv'
 
     :param crypto_name
@@ -193,7 +199,9 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     :param window_size: The size of the price window (in days) used in the transaction prediction
     :param normalize: Whether or not the data was normalized
     :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
-    (default is False)
+    :param standardize: Whether to use StandardScaler (if True) or MinMaxScaler (if False) in normalization (ignored if
+    normalize=False)
+    :type standardize: bool
     :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
     when it actually has to buy.
     :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
@@ -201,7 +209,8 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     :return A string with the name of a preprocessed data file given a series of config parameters
     :rtype: str
     """
-    norm_string = '_norm_{0}'.format('row' if normalize_by_row else 'col') if normalize else ''
+    norm_string = '_norm_{0}_{1}'.format('row' if normalize_by_row else 'col',
+                                         'std' if standardize else 'minmax') if normalize else ''
     filename = 'pre_{0}_{1}({2})_{3}-{4}_win{5}{6}_b{7}s{8}.csv'.format(crypto_name, predictor_class.__name__,
                                                                         lookahead_days, starting_date, ending_date,
                                                                         window_size, norm_string, prob_buy, prob_sell)
@@ -209,7 +218,7 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
 
 
 def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
-                   normalize_by_row, prob_buy, prob_sell):
+                   normalize_by_row, standardize, prob_buy, prob_sell):
     """
     Load the DataFrame (if saved) as a CSV containing data ready for the classification task.
     :param crypto_name
@@ -222,6 +231,9 @@ def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, 
     :param window_size: The size of the price window (in days) used in the transaction prediction
     :param normalize: Whether or not the data was normalized
     :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
+    :param standardize: Whether to use StandardScaler (if True) or MinMaxScaler (if False) in normalization (ignored if
+    normalize=False)
+    :type standardize: bool
     :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
     when it actually has to buy.
     :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
@@ -234,7 +246,7 @@ def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, 
     :rtype: DataFrame
     """
     data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                                      window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+                                      window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell)
     data_file_path = os.path.join(MASTER_DATA_DIR, data_filename)
     if os.path.isfile(data_file_path):
         logger.info("Preprocessed datafile '{0}'' already exists. "
@@ -246,7 +258,7 @@ def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, 
 
 
 def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                   window_size, normalize, normalize_by_row, prob_buy, prob_sell):
+                   window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell):
     """
     Save the DataFrame containing data ready for the classification task as a CSV file.
     :param crypto_name
@@ -260,7 +272,9 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
     :param window_size: The size of the price window (in days) used in the transaction prediction
     :param normalize: Whether or not the data was normalized
     :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
-    (default is False)
+    :param standardize: Whether to use StandardScaler (if True) or MinMaxScaler (if False) in normalization (ignored if
+    normalize=False)
+    :type standardize: bool
     :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
     when it actually has to buy.
     :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
@@ -268,15 +282,16 @@ def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days
     """
 
     data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                                      window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+                                      window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell)
     data_file_path = os.path.join(MASTER_DATA_DIR, data_filename)
     logger.info("Saving data to file '{0}'".format(data_file_path))
     transactions_df.to_csv(data_file_path, index=False)
 
 
 def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_size, normalize, normalize_by_row,
-                         starting_date=None, ending_date=None, starting_investment=None, daily_allowance=None,
-                         lookahead_days=None, prob_buy=None, prob_sell=None, save_roi=None, run_predictor=True):
+                         standardize, starting_date=None, ending_date=None, starting_investment=None,
+                         daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None, save_roi=None,
+                         run_predictor=True):
     """
     Preprocess a dataframe containing cryptocurrency information and have it ready for classification.
     The preprocessing, by default, runs a `CryptoPredictor`, which is necessary for training and testing models.
@@ -294,8 +309,10 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     :param normalize: Whether or not the data was normalized
     :type normalize: bool
     :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
-    (default is False)
     :type normalize_by_row: bool
+    :param standardize: Whether to use StandardScaler (if True) or MinMaxScaler (if False) in normalization (ignored if
+    normalize=False)
+    :type standardize: bool
     :param starting_date: The date from which the data pipeline began (inclusive)
     :param ending_date: The date in which the data pipeline ended
     :param starting_investment
@@ -334,7 +351,7 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
     # Data normalization
     # TODO: Normalization should be part of training stage and column-based normalization should be stored with model
     if normalize:
-        transactions_df = normalize_df(transactions_df, normalize_by_row)
+        transactions_df, _ = normalize_df(transactions_df, normalize_by_row, standardize)
 
     return transactions_df
 
@@ -374,6 +391,7 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     window_size = preprocessing_config.window_size
     normalize = preprocessing_config.normalize
     normalize_by_row = preprocessing_config.normalize_by_row
+    standardize = preprocessing_config.standardize
 
     # Predictor parameters
     lookahead_days = preprocessing_config.predictor_params['lookahead_days']
@@ -385,19 +403,20 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     # Load preprocessed data file if it exists
     if save_data:
         transactions_df = load_data_file(crypto_name, predictor_cls, lookahead_days, starting_date, ending_date,
-                                         window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+                                         window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell)
         if transactions_df is not None:
             return transactions_df
 
     # Preprocess the data
     transactions_df = preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_size, normalize,
-                                           normalize_by_row, starting_date, ending_date, starting_investment,
-                                           daily_allowance, lookahead_days, prob_buy, prob_sell, save_roi)
+                                           normalize_by_row, standardize, starting_date, ending_date,
+                                           starting_investment, daily_allowance, lookahead_days, prob_buy, prob_sell,
+                                           save_roi)
 
     # Save data
     if save_data:
         save_data_file(transactions_df, crypto_name, predictor_cls, lookahead_days, starting_date, ending_date,
-                       window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+                       window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell)
 
     logger.info("Preprocessing pipeline complete!\n")
 
