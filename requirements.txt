@@ -20,7 +20,7 @@ decorator==4.2.1
 django-htmlmin==0.10.0
 entrypoints==0.2.3
 enum34==1.1.6
-Flask==0.12.3
+Flask==1.0.0
 Flask-Babel==0.11.2
 Flask-BabelEx==0.9.3
 Flask-Gravatar==0.5.0
@@ -109,7 +109,7 @@ urllib3==1.24.2
 virtualenv==15.1.0
 wcwidth==0.1.7
 webencodings==0.5.1
-Werkzeug==0.14.1
+Werkzeug==0.15.3
 wheel=0.30.0
 widgetsnbextension==2.0.0
 win-unicode-console==0.5

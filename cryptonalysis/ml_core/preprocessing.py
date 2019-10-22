@@ -6,7 +6,8 @@ from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingCo
 from datetime import date
 from market import market
 from pandas import DataFrame, to_datetime, Series
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.base import BaseEstimator
 from transaction_builders import TRANSACTION_TYPE, BiffPredictor
 
 # Logging
@@ -126,33 +127,47 @@ def build_transactions_df(transactions):
     return df
 
 
-def normalize_df(df, by_row):
+def normalize_df(df, by_row, standardize=False):
     """
-    Normalize a DataFrame either by row using feature scaling (by_row=True), or using scikit-learn's by-column
-    StandardScaler (by_row=False).
-    A value is normalized in the row using the feature scaling formula to be in the range [0, 1]:
+    Normalize a DataFrame either by row (sample per sample) or by column (feature scaling). It can either use
+    standardization (StandardScaler) or min max normalization (MinMaxScaler).
+    Standardization uses the standard score of a sample:
+    x' = (x - u) / s, where u is the mean and s is the standard deviation
+    Normalization uses the min nax scaling formula to be in the range [0, 1]:
     x' = (x - x_min) / (x_max - x_min)
+    When normalizing by column, the scaler is also returned by the function, since the same scaler is required for
+    training, testing, and prediction. The scaler becomes useless after normalization when normalizing by row.
     :param df: The DataFrame to normalize
-    :param by_row: If True, normalizes by row using feature scaling, if False, uses scikit-learn's FeatureScaler, which
-    scales by column and using variance.
-    :return: A new DataFrame with each row normalized
-    :rtype: DataFrame
+    :type df: DataFrame
+    :param by_row: If True, normalizes by row using, taking each sample independently, otherwise it normalizes by column
+    :type by_row: bool
+    :param standardize: Whether to use StandardScaler (if True) or MinMaxScaler (if False)
+    :type standardize: bool
+    :return: A tuple with the normalized Dataframe and the scaler (or None if by_row=True)
+    :rtype: (DataFrame, BaseEstimator)
     """
 
     logger.info("Normalizing data...")
 
-    if by_row:
-        norm_df = df.copy(deep=True)
-        for row in range(len(df)):
-            norm_df.iloc[row, :-1] = (df.iloc[row, :-1] - df.iloc[row, :-1].min()) / \
-                                     (df.iloc[row, :-1].max() - df.iloc[row, :-1].min())
-    else:
+    if standardize:
         scaler = StandardScaler()
-        scaler.fit(df.iloc[:, :-1])
-        norm_df = DataFrame(scaler.transform(df.iloc[:, :-1]))
-        norm_df['transaction'] = df['transaction']
+    else:
+        scaler = MinMaxScaler()
 
-    return norm_df
+    norm_df = df.copy(deep=True)
+    only_data = norm_df.iloc[:, :-1]
+    if by_row:
+        scaler = scaler.fit(only_data.transpose())
+        norm_df.iloc[:, :-1] = scaler.transform(only_data.transpose()).transpose()
+    else:
+        scaler = scaler.fit(only_data)
+        norm_df.iloc[:, :-1] = scaler.transform(only_data)
+
+    # Return scaler only if not by_row
+    if by_row:
+        scaler = None
+
+    return norm_df, scaler
 
 
 def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
