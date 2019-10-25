@@ -11,6 +11,7 @@ from pandas import Series
 
 # Constants for tests
 CRYPTO_NAME = 'ETH'
+DEFAULT_PREDICTOR_CLS = BiffPredictor
 WINDOW_SIZE = 5
 DATES = ['2019-01-01', '2019-01-02', '2019-01-03', '2019-01-04', '2019-01-05', '2019-01-06', '2019-01-07', '2019-01-08',
          '2019-01-09', '2019-01-10', '2019-01-11', '2019-01-12', '2019-01-13', '2019-01-14', '2019-01-15', '2019-01-16',
@@ -28,7 +29,7 @@ class TestCryptoPredictor(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestCryptoPredictor, self).__init__(*args, **kwargs)
         self.default_predictor = \
-            BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
 
     def test_idempotent_crypto_predictor_methods(self):
         """
@@ -115,10 +116,10 @@ class TestCryptoPredictor(unittest.TestCase):
         self.assertAlmostEqual(self.default_predictor.cash, 105.97981, 5)
 
         # Verify that run_predictor() and run_transaction_simulation() have same results
-        actual_run = BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+        actual_run = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
         actual_run.run_predictor()
         actual_transactions = [t['transaction'] for t in actual_run.transactions]
-        simulation_run = BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
+        simulation_run = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
                                        crypto_name=CRYPTO_NAME)
         simulation_run.run_transaction_simulation(actual_transactions)
         self.assertEqual(actual_run.owned_crypto, simulation_run.owned_crypto)
@@ -132,14 +133,14 @@ class TestCryptoPredictor(unittest.TestCase):
         """
 
         # Most transactions possible
-        predictor = BiffPredictor(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
+        predictor = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
                                   lookahead_days=1)
         predictor.run_predictor()
         self.assertEqual(predictor.total_investment, 195)
         self.assertEqual(len(predictor.transactions), 19)
 
         # Least transactions possible
-        predictor = BiffPredictor(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
+        predictor = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
                                   lookahead_days=19)
         predictor.run_predictor()
         self.assertEqual(predictor.total_investment, 105)
@@ -147,11 +148,11 @@ class TestCryptoPredictor(unittest.TestCase):
 
         # Wrong params
         with self.assertRaises(ValueError):
-            BiffPredictor(market, price_list=PRICE_SERIES, window_size=0, crypto_name=CRYPTO_NAME)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=0, crypto_name=CRYPTO_NAME)
         with self.assertRaises(ValueError):
-            BiffPredictor(market, price_list=PRICE_SERIES, window_size=20, crypto_name=CRYPTO_NAME)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=20, crypto_name=CRYPTO_NAME)
         with self.assertRaises(ValueError):
-            BiffPredictor(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME, lookahead_days=20)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME, lookahead_days=20)
 
 
 class TestCryptoPredictorImplementations(unittest.TestCase):

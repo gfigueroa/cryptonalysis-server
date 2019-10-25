@@ -64,11 +64,11 @@ def run_prediction_simulation(cryptonalysis_config):
         daily_allowance = preprocessing_config.predictor_params['daily_allowance']
 
         # Preprocess the data
-        preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto, predictor_cls, price_column,
-                                                 window_size, normalize, normalize_by_row, standardize,
-                                                 starting_date=None, ending_date=None,
-                                                 starting_investment=starting_investment,
-                                                 daily_allowance=daily_allowance, lookahead_days=lookahead_days)
+        preprocessed_data, _ = preprocess_dataframe(df, cryptonalysis_config.crypto, predictor_cls, price_column,
+                                                    window_size, normalize, normalize_by_row, standardize,
+                                                    starting_date=None, ending_date=None,
+                                                    starting_investment=starting_investment,
+                                                    daily_allowance=daily_allowance, lookahead_days=lookahead_days)
     except Exception as e:
         logger.error("Error in preprocessing pipeline! Skipping...")
         logger.error(e.message)
@@ -146,8 +146,9 @@ def predict_for_date(cryptonalysis_config, for_date):
     standardize = preprocessing_config.standardize
 
     # Preprocess the data
-    preprocessed_data = preprocess_dataframe(crypto_data, cryptonalysis_config.crypto, predictor_cls, price_column,
-                                             window_size, normalize, normalize_by_row, standardize, run_predictor=False)
+    preprocessed_data, _ = preprocess_dataframe(crypto_data, cryptonalysis_config.crypto, predictor_cls, price_column,
+                                                window_size, normalize, normalize_by_row, standardize,
+                                                run_predictor=False)
 
     # Split dataset for classification
     X, y = split_dataset(preprocessed_data)
