@@ -120,7 +120,7 @@ class TestCryptoPredictor(unittest.TestCase):
         actual_run.run_predictor()
         actual_transactions = [t['transaction'] for t in actual_run.transactions]
         simulation_run = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
-                                       crypto_name=CRYPTO_NAME)
+                                               crypto_name=CRYPTO_NAME)
         simulation_run.run_transaction_simulation(actual_transactions)
         self.assertEqual(actual_run.owned_crypto, simulation_run.owned_crypto)
         self.assertEqual(actual_run.cash, simulation_run.cash)
@@ -134,14 +134,14 @@ class TestCryptoPredictor(unittest.TestCase):
 
         # Most transactions possible
         predictor = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
-                                  lookahead_days=1)
+                                          lookahead_days=1)
         predictor.run_predictor()
         self.assertEqual(predictor.total_investment, 195)
         self.assertEqual(len(predictor.transactions), 19)
 
         # Least transactions possible
         predictor = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
-                                  lookahead_days=19)
+                                          lookahead_days=19)
         predictor.run_predictor()
         self.assertEqual(predictor.total_investment, 105)
         self.assertEqual(len(predictor.transactions), 1)

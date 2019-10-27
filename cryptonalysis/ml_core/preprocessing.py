@@ -275,6 +275,7 @@ def load_preprocessed_data(crypto_name, predictor_class, lookahead_days, startin
         logger.info("Preprocessed datafile '{0}'' already exists. "
                     "Loading file and skipping preprocessing pipeline...".format(data_file_path))
         transactions_df = pd.read_csv(data_file_path, index_col='date')
+        transactions_df.index = pd.to_datetime(transactions_df.index)
         return transactions_df
     else:
         return None
