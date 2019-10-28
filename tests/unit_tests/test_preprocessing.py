@@ -5,7 +5,6 @@ Unit tests for the preprocessing.py module.
 import os
 import pandas as pd
 import unittest
-from cryptonalysis.config import load_cryptonalysis_config
 from cryptonalysis.ml_core.market import market
 from cryptonalysis.ml_core.preprocessing import get_historical_df, get_aggregated_dfs, build_transactions_df, \
     get_price_list, normalize_df, normalize_df_with_scaler, load_preprocessed_data, save_preprocessed_data, \
@@ -15,7 +14,6 @@ from datetime import date
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 RES_DIR = 'tests/resources'
-CONFIG_TEST = 'config_test.conf'
 HISTORICAL_TEST_DATA = 'historical_test_data.csv'
 HISTORICAL_TEST_FILE = os.path.join(RES_DIR, HISTORICAL_TEST_DATA)
 
@@ -36,37 +34,29 @@ PROB_SELL = 1
 
 
 class TestPreprocessingFunctions(unittest.TestCase):
-    """
-    Test CryptoPredictor superclass methods, independent of the subclass implementations.
-    """
-
     def __init__(self, *args, **kwargs):
         super(TestPreprocessingFunctions, self).__init__(*args, **kwargs)
-        self.config = load_cryptonalysis_config(RES_DIR, CONFIG_TEST)
+        self.df = get_historical_df(HISTORICAL_TEST_FILE)
+        self.price_list = get_price_list(self.df, PRICE_COLUMN)
 
     def test_get_historical_df(self):
-        df = get_historical_df(HISTORICAL_TEST_FILE)
-        real_columns = list(df.columns)
+        real_columns = list(self.df.columns)
         expected_columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap']
         self.assertListEqual(real_columns, expected_columns)
-        self.assertEqual(df.shape, (20, 7))
-        self.assertEqual(df['Date'].iloc[0], pd.Timestamp('2019-01-01 00:00:00'))
-        self.assertEqual(df['Date'].iloc[-1], pd.Timestamp('2019-01-20 00:00:00'))
+        self.assertEqual(self.df.shape, (20, 7))
+        self.assertEqual(self.df['Date'].iloc[0], pd.Timestamp('2019-01-01 00:00:00'))
+        self.assertEqual(self.df['Date'].iloc[-1], pd.Timestamp('2019-01-20 00:00:00'))
 
     def test_get_aggregated_dfs(self):
-        df = get_historical_df(HISTORICAL_TEST_FILE)
-        daily_df, weekly_df, monthly_df = get_aggregated_dfs(df)
+        daily_df, weekly_df, monthly_df = get_aggregated_dfs(self.df)
         self.assertEqual(daily_df.shape, (20, 6))
         self.assertEqual(weekly_df.shape, (3, 6))
         self.assertEqual(monthly_df.shape, (1, 6))
 
     def test_build_transactions_df(self):
-        df = get_historical_df(HISTORICAL_TEST_FILE)
-        price_list = get_price_list(df, PRICE_COLUMN)
-
         # Test default predictor
         default_predictor = \
-            PREDICTOR_CLS(market, price_list=price_list, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            PREDICTOR_CLS(market, price_list=self.price_list, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
         default_predictor.run_predictor()
         transactions = build_transactions_df(default_predictor.transactions)
         self.assertEqual(transactions.shape, (15, 6))
@@ -79,7 +69,7 @@ class TestPreprocessingFunctions(unittest.TestCase):
 
         # Test predictor with different params
         modified_predictor = \
-            PREDICTOR_CLS(market, price_list=price_list, window_size=10, crypto_name=CRYPTO_NAME, lookahead_days=5)
+            PREDICTOR_CLS(market, price_list=self.price_list, window_size=10, crypto_name=CRYPTO_NAME, lookahead_days=5)
         modified_predictor.run_predictor()
         transactions = build_transactions_df(modified_predictor.transactions)
         self.assertEqual(transactions.shape, (6, 11))
@@ -90,13 +80,9 @@ class TestPreprocessingFunctions(unittest.TestCase):
         self.assertListEqual(expected_transactions, actual_transactions)
 
     def test_normalize_df(self):
-        # Get transactions DF
-        df = get_historical_df(HISTORICAL_TEST_FILE)
-        price_list = get_price_list(df, PRICE_COLUMN)
-
         # Run predictor
         default_predictor = \
-            PREDICTOR_CLS(market, price_list=price_list, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            PREDICTOR_CLS(market, price_list=self.price_list, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
         default_predictor.run_predictor()
         transactions = build_transactions_df(default_predictor.transactions)
 
@@ -131,13 +117,9 @@ class TestPreprocessingFunctions(unittest.TestCase):
             normalize_df_with_scaler(transactions, StandardScaler())
 
     def test_save_and_load_data_file(self):
-        # Get transactions DF
-        df = get_historical_df(HISTORICAL_TEST_FILE)
-        price_list = get_price_list(df, PRICE_COLUMN)
-
         # Run predictor
         default_predictor = \
-            PREDICTOR_CLS(market, price_list=price_list, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            PREDICTOR_CLS(market, price_list=self.price_list, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
         default_predictor.run_predictor()
         transactions = build_transactions_df(default_predictor.transactions)
 
@@ -175,12 +157,9 @@ class TestPreprocessingFunctions(unittest.TestCase):
                 self.assertAlmostEqual(normalized_data.iloc[row, col], normalized_transactions.iloc[row, col], 5)
 
     def test_preprocess_dataframe(self):
-        # Get transactions DF
-        df = get_historical_df(HISTORICAL_TEST_FILE)
-
         # Run preprocessing with predictor
         transactions_df, scaler = \
-            preprocess_dataframe(df, crypto_name=CRYPTO_NAME, predictor_cls=PREDICTOR_CLS, price_column=PRICE_COLUMN,
+            preprocess_dataframe(self.df, crypto_name=CRYPTO_NAME, predictor_cls=PREDICTOR_CLS, price_column=PRICE_COLUMN,
                                  window_size=WINDOW_SIZE, normalize=NORMALIZE, normalize_by_row=NORMALIZE_BY_ROW,
                                  standardize=STANDARDIZE, starting_date=STARTING_DATE, ending_date=ENDING_DATE,
                                  lookahead_days=LOOKAHEAD_DAYS, prob_buy=PROB_BUY, prob_sell=PROB_SELL)
@@ -195,7 +174,7 @@ class TestPreprocessingFunctions(unittest.TestCase):
 
         # Run preprocessing without predictor TODO: Fix preprocessing without predictor (make new function)
         transaction_df, scaler = \
-            preprocess_dataframe(df, crypto_name=CRYPTO_NAME, predictor_cls=PREDICTOR_CLS, price_column=PRICE_COLUMN,
+            preprocess_dataframe(self.df, crypto_name=CRYPTO_NAME, predictor_cls=PREDICTOR_CLS, price_column=PRICE_COLUMN,
                                  window_size=WINDOW_SIZE, normalize=NORMALIZE, normalize_by_row=NORMALIZE_BY_ROW,
                                  standardize=STANDARDIZE, run_predictor=False)
         self.assertEquals(transaction_df.shape, (1, 6))

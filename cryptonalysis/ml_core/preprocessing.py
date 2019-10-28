@@ -240,8 +240,8 @@ def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_dat
     return filename
 
 
-def load_preprocessed_data(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
-                           normalize_by_row, standardize, prob_buy, prob_sell):
+def load_preprocessed_data(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size,
+                           normalize, normalize_by_row, standardize, prob_buy, prob_sell, preprocessed_data_dir=None):
     """
     Load the DataFrame (if saved) as a CSV containing data ready for the classification task.
     :param crypto_name
@@ -265,12 +265,16 @@ def load_preprocessed_data(crypto_name, predictor_class, lookahead_days, startin
     when it actually has to buy.
     :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
     when it actually has to sell.
+    :param preprocessed_data_dir: (Default None) The (overridden) directory where the preprocessed data is located. If
+    None, the default `PREPROCESSED_DATA_DIR` is used.
+    :type preprocessed_data_dir: str
     :return: a DataFrame
     :rtype: DataFrame
     """
     data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
                                       window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell)
-    data_file_path = os.path.join(PREPROCESSED_DATA_DIR, data_filename)
+    dir_to_use = PREPROCESSED_DATA_DIR if preprocessed_data_dir is None else preprocessed_data_dir
+    data_file_path = os.path.join(dir_to_use, data_filename)
     if os.path.isfile(data_file_path):
         logger.info("Preprocessed datafile '{0}'' already exists. "
                     "Loading file and skipping preprocessing pipeline...".format(data_file_path))
@@ -305,6 +309,9 @@ def save_preprocessed_data(transactions_df, crypto_name, predictor_class, lookah
     when it actually has to sell.
     """
 
+    if not os.path.exists(PREPROCESSED_DATA_DIR):
+        os.makedirs(PREPROCESSED_DATA_DIR)
+
     data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
                                       window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell)
     data_file_path = os.path.join(PREPROCESSED_DATA_DIR, data_filename)
@@ -317,7 +324,7 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
                          daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None, save_roi=None,
                          run_predictor=True):
     """
-    Preprocess a dataframe containing cryptocurrency information and have it ready for classification.
+    Preprocess a dataframe containing cryptocurrency information and have it ready for training/testing.
     The preprocessing, by default, runs a `CryptoPredictor`, which is necessary for training and testing models.
     This step can be skipped when only daily prediction is required.
     :param df: The DataFrame containing the unprocessed cryptocurrency data
@@ -385,8 +392,7 @@ def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_si
 
 def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, save_roi):
     """
-    Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for the classification
-    task.
+    Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for training.
     :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
     :type crypto_name: str
     :param preprocessing_config: The preprocessing configuration object
@@ -430,7 +436,8 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     # Load preprocessed data file if it exists
     if save_data:
         transactions_df = load_preprocessed_data(crypto_name, predictor_cls, lookahead_days, starting_date, ending_date,
-                                                 window_size, normalize, normalize_by_row, standardize, prob_buy, prob_sell)
+                                                 window_size, normalize, normalize_by_row, standardize, prob_buy,
+                                                 prob_sell)
         if transactions_df is not None:
             return transactions_df
 

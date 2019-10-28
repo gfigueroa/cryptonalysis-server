@@ -87,9 +87,6 @@ def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5):
     return X, y, X_training, y_training, X_testing, y_testing, X_dev, y_dev, X_eval, y_eval
 
 
-# Grid Search CV (development and evaluation datasets) function
-
-
 def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval, y_eval, k=4):
     """
     Perform a Grid Search algorithm with Cross Validation to find the optimal hyperparameter values and test the
