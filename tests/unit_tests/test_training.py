@@ -5,44 +5,63 @@ Unit tests for the training.py module.
 import os
 import pandas as pd
 import unittest
+from cryptonalysis.config import PreprocessingConfig
 from cryptonalysis.ml_core.preprocessing import load_preprocessed_data
 from cryptonalysis.ml_core.training import split_datasets, get_optimized_classifier
-from cryptonalysis.ml_core.transaction_builders import BiffPredictor
+from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name
 from datetime import date
 from sklearn import svm
+from sklearn.neural_network import MLPClassifier
 
-RES_DIR = 'tests/resources'
+RES_DIR = os.path.join('tests', 'resources')
 HISTORICAL_TEST_DATA = 'historical_test_data.csv'
 HISTORICAL_TEST_FILE = os.path.join(RES_DIR, HISTORICAL_TEST_DATA)
 
 
 # Preprocessing constants for tests
 CRYPTO_NAME = 'ETH'
-PRICE_COLUMN = 'Close'
-PREDICTOR_CLS = BiffPredictor
-LOOKAHEAD_DAYS = 1
 STARTING_DATE = date(2019, 1, 1)
 ENDING_DATE = date(2019, 1, 20)
 WINDOW_SIZE = 5
 NORMALIZE = True
 NORMALIZE_BY_ROW = True
 STANDARDIZE = False
+PRICE_COLUMN = 'Close'
+PREDICTOR_CLS_NAME = 'BiffPredictor'
+PREDICTOR_CLS = get_predictor_class_from_name(PREDICTOR_CLS_NAME)
 PROB_BUY = 1
 PROB_SELL = 1
+STARTING_INVESTMENT = 100
+DAILY_ALLOWANCE = 5
+LOOKAHEAD_DAYS = 1
+PREPROCESSING_CONFIG = PreprocessingConfig({
+    'start_date': STARTING_DATE,
+    'end_date': ENDING_DATE,
+    'window_size': WINDOW_SIZE,
+    'normalize': NORMALIZE,
+    'normalize_by_row': NORMALIZE_BY_ROW,
+    'standardize': STANDARDIZE,
+    'price_column': PRICE_COLUMN,
+    'predictor_cls': PREDICTOR_CLS_NAME,
+    'predictor_params': {
+        'prob_buy': PROB_BUY,
+        'prob_sell': PROB_SELL,
+        'starting_investment': STARTING_INVESTMENT,
+        'daily_allowance': DAILY_ALLOWANCE,
+        'lookahead_days': LOOKAHEAD_DAYS
+    }
+})
 
 # Training constants for tests
 SHUFFLE = True
-CV_FOLDS = 4
+CV_FOLDS = 2  # Too restrictive when y_dev is very small
 
 
 class TestTrainingFunctions(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestTrainingFunctions, self).__init__(*args, **kwargs)
         self.preprocessed_data = \
-            load_preprocessed_data(crypto_name=CRYPTO_NAME, predictor_class=PREDICTOR_CLS,
-                                   lookahead_days=LOOKAHEAD_DAYS, starting_date=STARTING_DATE, ending_date=ENDING_DATE,
-                                   window_size=WINDOW_SIZE, normalize=NORMALIZE, normalize_by_row=NORMALIZE_BY_ROW,
-                                   standardize=STANDARDIZE, prob_buy=PROB_BUY, prob_sell=PROB_SELL,
+            load_preprocessed_data(crypto_name=CRYPTO_NAME, preprocessing_config=PREPROCESSING_CONFIG,
                                    preprocessed_data_dir=RES_DIR)
 
     def test_split_datasets(self):
@@ -77,6 +96,23 @@ class TestTrainingFunctions(unittest.TestCase):
         svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [0.1, 1],
                                  'C': [0.1, 1]},
                                 {'kernel': ["linear"], 'C': [0.1, 1]}]
-        grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
-            get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
-        pass
+        # Check y_dev contains both classes at least K times
+        if len(y_dev[y_dev == 0]) < CV_FOLDS or len(y_dev[y_dev == 1]) < CV_FOLDS:
+            with self.assertRaises(ValueError):
+                get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+        else:
+            grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
+                get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+            self.assertEqual(grid_search_cv_svc.best_score_, svc_training_acc)
+
+        # Grid Search CV with NNs
+        mlp = MLPClassifier()
+        mlp_tuned_parameters = {
+            'learning_rate': ["constant", "invscaling"],
+            'hidden_layer_sizes': [(10, 10), (20, 20)],
+            'alpha': [0.1, 1],
+            'activation': ["identity", "logistic"]
+        }
+        grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
+            get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+        self.assertEqual(grid_search_cv_mlp.best_score_, mlp_training_acc)

@@ -57,7 +57,7 @@ class CryptoPredictor(object):
     PROB_BUY = 1
     PROB_SELL = 1
 
-    def __init__(self, market, price_list, window_size, crypto_name, starting_date=None, ending_date=None,
+    def __init__(self, market, price_list, window_size, crypto_name, starting_date, ending_date,
                  starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None):
         """
         CryptoPredictor constructor.
@@ -71,7 +71,7 @@ class CryptoPredictor(object):
         :type crypto_name: str
         :param starting_date: The date from which to start making transactions
         :type starting_date: date
-        :param ending_date: The date in which to stop making transactions (default is today)
+        :param ending_date: The date in which to stop making transactions
         :type ending_date: date
         :param starting_investment: The starting investment in fiat
         :type starting_investment: float
@@ -96,11 +96,11 @@ class CryptoPredictor(object):
         self.transactions = []
 
         self.market = market
-        self._starting_date = starting_date or price_list.index[0].date()  # First date in DataFrame
-        self.ending_date = ending_date or price_list.index[-1].date()  # Last date in DataFrame
-        if self._starting_date >= self.ending_date:
-            raise ValueError("Starting date {} must be before ending date {}".format(self._starting_date,
-                                                                                     self.ending_date))
+        self._starting_date = starting_date
+        self.ending_date = ending_date
+        if self._starting_date >= self.ending_date or not self._starting_date or not self.ending_date:
+            raise ValueError("Starting date {} must be before ending date {} and they both must be provided!".format(
+                self._starting_date, self.ending_date))
         if window_size < 1:
             raise ValueError("Window size must be greater than 0.")
         self._window_size = window_size

@@ -17,8 +17,8 @@ from sklearn.neural_network import MLPClassifier
 # Logging
 logger = logging.getLogger()
 
-RESULTS_DIR = os.path.join(os.path.pardir, 'results')
-MODELS_DIR = os.path.join(os.path.pardir, 'models')
+RESULTS_DIR = os.path.join('cryptonalysis', 'results')
+MODELS_DIR = os.path.join('cryptonalysis', 'models')
 
 
 def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5):
@@ -374,7 +374,7 @@ if __name__ == '__main__':
 
     config_file = sys.argv[1]
 
-    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
+    config_path = 'config'
     config_grid = load_cryptonalysis_config_grid(config_path, config_file)
 
     run_classic_training(config_grid)

@@ -5,12 +5,13 @@ Configuration classes.
 
 import json
 import os
-from datetime import date, datetime
+from datetime import date
 from logging.config import fileConfig
 from pyhocon import ConfigFactory, ConfigTree
 from cryptonalysis.utils import misc_utils
 from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name
 from pandas.io.json import json_normalize
+from pandas import DatetimeIndex
 
 
 class Config(object):
@@ -108,15 +109,16 @@ class PreprocessingConfig(Config):
 
         self.config_dict = preprocessing_config_dict
 
-    def adjust_end_date(self, latest_date):
+    def adjust_dates(self, date_index):
         """
-        Adjust the end_date if the latest date is earlier.
-        :param latest_date
-        :type latest_date: datetime
+        Adjust the start and end dates for invalid values based on a dataframe's DatetimeIndex
+        :param date_index
+        :type date_index: DatetimeIndex
         """
-        if latest_date < self.end_date:
-            self.end_date = latest_date
-            self.config_dict['end_date'] = datetime.strftime(latest_date, '%Y-%m-%d')
+        if self.start_date < date_index[0].date() or self.start_date > date_index[-1].date():
+            self.start_date = date_index[0].date()  # First date in DataFrame
+        if self.end_date < date_index[0].date() or self.end_date > date_index[-1].date():
+            self.end_date = date_index[-1].date()  # Last date in DataFrame
 
     def __str__(self):
         return json.dumps(self.config_dict, indent=2)

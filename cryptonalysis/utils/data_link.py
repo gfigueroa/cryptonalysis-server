@@ -31,7 +31,7 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     end_date_str = end_date.strftime('%Y%m%d')
     crypto_endpoint = "{}?start={}&end={}".format(API_URLS[crypto_name], start_date_str, end_date_str)
 
-    df = pd.read_html(crypto_endpoint)[0]
+    df = pd.read_html(crypto_endpoint)[2]  # Format change
 
     # Clean up column names
     def replace(s):
@@ -51,6 +51,9 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
         df['Market Cap'] = df['Market Cap'].str.replace(',', '')
         df['Market Cap'] = pd.to_numeric(df['Market Cap'])
         df = df.fillna(0)
+
+    # Set index
+    df = df.set_index('Date').loc[:, 'Open':]
 
     return df
 

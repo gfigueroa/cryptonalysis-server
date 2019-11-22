@@ -7,8 +7,9 @@ from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from cryptonalysis.utils.misc_utils import parse_date
 from market import market
 from pandas import DataFrame
-from preprocessing import get_historical_df, preprocess_dataframe, CRYPTOCURRENCIES, MASTER_DATA_DIR, \
-    get_price_list
+from preprocessing import get_historical_df, get_price_list, preprocess_dataframe, preprocess_data_point, \
+    CRYPTOCURRENCIES, MASTER_DATA_DIR
+
 from training import load_model
 from transaction_builders import get_transaction_type
 from sklearn.metrics import classification_report, accuracy_score
@@ -17,7 +18,7 @@ from sklearn.metrics import classification_report, accuracy_score
 # Logging
 logger = logging.getLogger()
 
-RESULTS_DIR = os.path.join(os.path.pardir, 'results')
+RESULTS_DIR = os.path.join('cryptonalysis', 'results')
 
 
 def split_dataset(df):
@@ -49,28 +50,11 @@ def run_prediction_simulation(cryptonalysis_config):
         data_file = os.path.join(MASTER_DATA_DIR, "new_{}.csv".format(CRYPTOCURRENCIES[cryptonalysis_config.crypto]))
         df = get_historical_df(data_file)
 
-        # Preprocessing parameters
-        preprocessing_config = cryptonalysis_config.preprocessing
-        predictor_cls = preprocessing_config.predictor_cls
-        price_column = preprocessing_config.price_column
-        window_size = preprocessing_config.window_size
-        normalize = preprocessing_config.normalize
-        normalize_by_row = preprocessing_config.normalize_by_row
-        standardize = preprocessing_config.standardize
-
-        # Predictor parameters
-        lookahead_days = preprocessing_config.predictor_params['lookahead_days']
-        starting_investment = preprocessing_config.predictor_params['starting_investment']
-        daily_allowance = preprocessing_config.predictor_params['daily_allowance']
-
         # Preprocess the data
-        preprocessed_data, _ = preprocess_dataframe(df, cryptonalysis_config.crypto, predictor_cls, price_column,
-                                                    window_size, normalize, normalize_by_row, standardize,
-                                                    starting_date=None, ending_date=None,
-                                                    starting_investment=starting_investment,
-                                                    daily_allowance=daily_allowance, lookahead_days=lookahead_days)
+        preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+                                                 predicting=True)
     except Exception as e:
-        logger.error("Error in preprocessing pipeline! Skipping...")
+        logger.error("Error in preprocessing for prediction!")
         logger.error(e.message)
         raise e
 
@@ -99,10 +83,22 @@ def run_prediction_simulation(cryptonalysis_config):
         logger.info("Evaluation accuracy (MLP): {}\n".format(accuracy))
 
         # Run transactions to calculate ROI
+        # Preprocessing parameters
+        preprocessing_config = cryptonalysis_config.preprocessing
+        predictor_cls = preprocessing_config.predictor_cls
+        starting_date = preprocessing_config.start_date
+        ending_date = preprocessing_config.end_date
+        price_column = preprocessing_config.price_column
+        window_size = preprocessing_config.window_size
+
+        # Predictor parameters
+        lookahead_days = preprocessing_config.predictor_params['lookahead_days']
+        starting_investment = preprocessing_config.predictor_params['starting_investment']
+        daily_allowance = preprocessing_config.predictor_params['daily_allowance']
+
         prices = get_price_list(df, price_column)
-        predictor = predictor_cls(market, prices, window_size, cryptonalysis_config.crypto, starting_date=None,
-                                  ending_date=None, starting_investment=starting_investment,
-                                  daily_allowance=daily_allowance, lookahead_days=lookahead_days)
+        predictor = predictor_cls(market, prices, window_size, cryptonalysis_config.crypto, starting_date, ending_date,
+                                  starting_investment, daily_allowance, lookahead_days)
 
         logger.info("Transaction simulation for SVC...")
         predictor.run_transaction_simulation(y_pred_svc.tolist())
@@ -111,7 +107,7 @@ def run_prediction_simulation(cryptonalysis_config):
 
         logger.info("Prediction simulation complete!\n")
     except Exception as e:
-        logger.error("Error in prediction simulation! Skipping...")
+        logger.error("Error in prediction simulation!")
         logger.error(e.message)
         raise e
 
@@ -136,19 +132,9 @@ def predict_for_date(cryptonalysis_config, for_date):
     crypto_data = get_crypto_data_for_date(cryptonalysis_config.crypto, for_date,
                                            cryptonalysis_config.preprocessing.window_size)
 
-    # Preprocessing parameters
-    preprocessing_config = cryptonalysis_config.preprocessing
-    predictor_cls = preprocessing_config.predictor_cls
-    price_column = preprocessing_config.price_column
-    window_size = preprocessing_config.window_size
-    normalize = preprocessing_config.normalize
-    normalize_by_row = preprocessing_config.normalize_by_row
-    standardize = preprocessing_config.standardize
-
     # Preprocess the data
-    preprocessed_data, _ = preprocess_dataframe(crypto_data, cryptonalysis_config.crypto, predictor_cls, price_column,
-                                                window_size, normalize, normalize_by_row, standardize,
-                                                run_predictor=False)
+    preprocessed_data = preprocess_data_point(crypto_data, cryptonalysis_config.crypto,
+                                              cryptonalysis_config.preprocessing)
 
     # Split dataset for classification
     X, y = split_dataset(preprocessed_data)
@@ -181,7 +167,7 @@ if __name__ == '__main__':
     action = sys.argv[1].lower()
     config_file = sys.argv[2]
 
-    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
+    config_path = 'config'
     config = load_cryptonalysis_config(config_path, config_file)
 
     if action == 'simulation':

@@ -6,6 +6,7 @@ import pandas as pd
 import unittest
 from cryptonalysis.ml_core.market import market
 from cryptonalysis.ml_core.transaction_builders import BiffPredictor, BiffPredictorSmart, ReverseBiffPredictor
+from datetime import date
 from pandas import Series
 
 
@@ -13,6 +14,8 @@ from pandas import Series
 CRYPTO_NAME = 'ETH'
 DEFAULT_PREDICTOR_CLS = BiffPredictor
 WINDOW_SIZE = 5
+STARTING_DATE = date(2019, 1, 1)
+ENDING_DATE = date(2019, 1, 20)
 DATES = ['2019-01-01', '2019-01-02', '2019-01-03', '2019-01-04', '2019-01-05', '2019-01-06', '2019-01-07', '2019-01-08',
          '2019-01-09', '2019-01-10', '2019-01-11', '2019-01-12', '2019-01-13', '2019-01-14', '2019-01-15', '2019-01-16',
          '2019-01-17', '2019-01-18', '2019-01-19', '2019-01-20']
@@ -29,7 +32,8 @@ class TestCryptoPredictor(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestCryptoPredictor, self).__init__(*args, **kwargs)
         self.default_predictor = \
-            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME,
+                                  starting_date=STARTING_DATE, ending_date=ENDING_DATE)
 
     def test_idempotent_crypto_predictor_methods(self):
         """
@@ -116,11 +120,14 @@ class TestCryptoPredictor(unittest.TestCase):
         self.assertAlmostEqual(self.default_predictor.cash, 105.97981, 5)
 
         # Verify that run_predictor() and run_transaction_simulation() have same results
-        actual_run = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+        actual_run = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
+                                           crypto_name=CRYPTO_NAME, starting_date=STARTING_DATE,
+                                           ending_date=ENDING_DATE)
         actual_run.run_predictor()
         actual_transactions = [t['transaction'] for t in actual_run.transactions]
         simulation_run = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
-                                               crypto_name=CRYPTO_NAME)
+                                               crypto_name=CRYPTO_NAME, starting_date=STARTING_DATE,
+                                               ending_date=ENDING_DATE)
         simulation_run.run_transaction_simulation(actual_transactions)
         self.assertEqual(actual_run.owned_crypto, simulation_run.owned_crypto)
         self.assertEqual(actual_run.cash, simulation_run.cash)
@@ -134,25 +141,28 @@ class TestCryptoPredictor(unittest.TestCase):
 
         # Most transactions possible
         predictor = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
-                                          lookahead_days=1)
+                                          starting_date=STARTING_DATE, ending_date=ENDING_DATE, lookahead_days=1)
         predictor.run_predictor()
         self.assertEqual(predictor.total_investment, 195)
         self.assertEqual(len(predictor.transactions), 19)
 
         # Least transactions possible
         predictor = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
-                                          lookahead_days=19)
+                                          starting_date=STARTING_DATE, ending_date=ENDING_DATE, lookahead_days=19)
         predictor.run_predictor()
         self.assertEqual(predictor.total_investment, 105)
         self.assertEqual(len(predictor.transactions), 1)
 
         # Wrong params
         with self.assertRaises(ValueError):
-            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=0, crypto_name=CRYPTO_NAME)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=0, crypto_name=CRYPTO_NAME,
+                                  starting_date=STARTING_DATE, ending_date=ENDING_DATE)
         with self.assertRaises(ValueError):
-            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=20, crypto_name=CRYPTO_NAME)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=20, crypto_name=CRYPTO_NAME,
+                                  starting_date=STARTING_DATE, ending_date=ENDING_DATE)
         with self.assertRaises(ValueError):
-            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME, lookahead_days=20)
+            DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=1, crypto_name=CRYPTO_NAME,
+                                  starting_date=STARTING_DATE, ending_date=ENDING_DATE, lookahead_days=20)
 
 
 class TestCryptoPredictorImplementations(unittest.TestCase):
@@ -163,11 +173,14 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestCryptoPredictorImplementations, self).__init__(*args, **kwargs)
         self.biff_predictor = \
-            BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME,
+                          starting_date=STARTING_DATE, ending_date=ENDING_DATE)
         self.biff_predictor_smart = \
-            BiffPredictorSmart(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            BiffPredictorSmart(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME,
+                               starting_date=STARTING_DATE, ending_date=ENDING_DATE)
         self.reverse_biff_predictor = \
-            ReverseBiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME)
+            ReverseBiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE, crypto_name=CRYPTO_NAME,
+                                 starting_date=STARTING_DATE, ending_date=ENDING_DATE)
 
     def test_biff_predictor(self):
         """
@@ -189,7 +202,8 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
 
         # Run Predictor with lookahead days=2
         modified_biff_predictor = BiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
-                                                crypto_name=CRYPTO_NAME, lookahead_days=2)
+                                                crypto_name=CRYPTO_NAME, starting_date=STARTING_DATE,
+                                                ending_date=ENDING_DATE, lookahead_days=2)
         modified_biff_predictor.run_predictor()
         self.assertEqual(modified_biff_predictor.owned_crypto, 0)  # All crypto sold at the end
         self.assertAlmostEqual(modified_biff_predictor.cash, 789.19383, 5)
@@ -220,7 +234,8 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
 
         # Run Predictor with lookahead days=2
         modified_biff_predictor_smart = BiffPredictorSmart(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
-                                                           crypto_name=CRYPTO_NAME, lookahead_days=2)
+                                                           crypto_name=CRYPTO_NAME, starting_date=STARTING_DATE,
+                                                           ending_date=ENDING_DATE, lookahead_days=2)
         modified_biff_predictor_smart.run_predictor()
         self.assertEqual(modified_biff_predictor_smart.owned_crypto, 0)  # All crypto sold at the end
         self.assertAlmostEqual(modified_biff_predictor_smart.cash, 1106.42608, 5)
@@ -251,7 +266,8 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
 
         # Run Predictor with lookahead days=2
         modified_reverse_biff_predictor = ReverseBiffPredictor(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
-                                                               crypto_name=CRYPTO_NAME, lookahead_days=2)
+                                                               crypto_name=CRYPTO_NAME, starting_date=STARTING_DATE,
+                                                               ending_date=ENDING_DATE, lookahead_days=2)
         modified_reverse_biff_predictor.run_predictor()
         self.assertEqual(modified_reverse_biff_predictor.owned_crypto, 0)  # All crypto sold at the end
         self.assertAlmostEqual(modified_reverse_biff_predictor.cash, 99.60801, 5)
