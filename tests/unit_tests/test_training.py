@@ -2,12 +2,15 @@
 Unit tests for the training.py module.
 """
 
+import copy
+import numpy
 import os
 import pandas as pd
+import random
 import unittest
-from cryptonalysis.config import PreprocessingConfig
+from cryptonalysis.config import PreprocessingConfig, TrainingConfig
 from cryptonalysis.ml_core.preprocessing import load_preprocessed_data
-from cryptonalysis.ml_core.training import split_datasets, get_optimized_classifier
+from cryptonalysis.ml_core.training import split_datasets, get_optimized_classifier, save_model, load_model
 from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name
 from datetime import date
 from sklearn import svm
@@ -55,14 +58,28 @@ PREPROCESSING_CONFIG = PreprocessingConfig({
 # Training constants for tests
 SHUFFLE = True
 CV_FOLDS = 2  # Too restrictive when y_dev is very small
+TRAINING_CONFIG = TrainingConfig({
+    'shuffle': SHUFFLE,
+    'cv_folds': CV_FOLDS
+})
 
 
 class TestTrainingFunctions(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestTrainingFunctions, self).__init__(*args, **kwargs)
+
+        # No-shuffle config
+        no_shuffle_training_config_dict = copy.deepcopy(TRAINING_CONFIG.config_dict)
+        no_shuffle_training_config_dict['shuffle'] = False
+        self.no_shuffle_training_config = TrainingConfig(no_shuffle_training_config_dict)
+
         self.preprocessed_data = \
             load_preprocessed_data(crypto_name=CRYPTO_NAME, preprocessing_config=PREPROCESSING_CONFIG,
                                    preprocessed_data_dir=RES_DIR)
+
+        # Always have the same random arrangements
+        random.seed(1)
+        numpy.random.seed(1)
 
     def test_split_datasets(self):
         # Test default shuffle split
@@ -87,7 +104,7 @@ class TestTrainingFunctions(unittest.TestCase):
         self.assertEqual(X_eval.index[0], pd.Timestamp('2019-01-12 00:00:00'))
         self.assertEqual(y_eval.index[-1], pd.Timestamp('2019-01-19 00:00:00'))
 
-    def test_get_optimized_classifier(self):
+    def test_get_optimized_classifier_with_shuffle(self):
         # Split dataset for classification
         _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(self.preprocessed_data, shuffle=SHUFFLE)
 
@@ -116,3 +133,71 @@ class TestTrainingFunctions(unittest.TestCase):
         grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
             get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
         self.assertEqual(grid_search_cv_mlp.best_score_, mlp_training_acc)
+
+    def test_get_optimized_classifier_without_shuffle(self):
+        # Split dataset for classification
+        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(self.preprocessed_data, shuffle=False)
+
+        # Grid Search CV with SVMs
+        svc = svm.SVC()
+        svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [0.1, 1],
+                                 'C': [0.1, 1]},
+                                {'kernel': ["linear"], 'C': [0.1, 1]}]
+        grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
+            get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+        self.assertAlmostEquals(svc_training_acc, 0.71429, 5)
+        self.assertEqual(svc_eval_acc, 0.5)
+
+        # Grid Search CV with NNs
+        mlp = MLPClassifier()
+        mlp_tuned_parameters = {
+            'learning_rate': ["constant", "invscaling"],
+            'hidden_layer_sizes': [(10, 10), (20, 20)],
+            'alpha': [0.1, 1],
+            'activation': ["identity", "logistic"]
+        }
+        grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
+            get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+        self.assertAlmostEquals(mlp_training_acc, 0.71429, 5)
+        self.assertEqual(mlp_eval_acc, 0.125)
+
+    def test_save_and_load_model_with_shuffle(self):
+        # Split dataset for classification
+        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(self.preprocessed_data, shuffle=SHUFFLE)
+
+        # Grid Search CV with NNs
+        mlp = MLPClassifier()
+        mlp_tuned_parameters = {
+            'learning_rate': ["constant", "invscaling"],
+            'hidden_layer_sizes': [(10, 10), (20, 20)],
+            'alpha': [0.1, 1],
+            'activation': ["identity", "logistic"]
+        }
+        grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
+            get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+        save_model(grid_search_cv_mlp, CRYPTO_NAME, PREPROCESSING_CONFIG, TRAINING_CONFIG, RES_DIR)
+
+        saved_model = load_model(grid_search_cv_mlp.estimator.__class__.__name__, CRYPTO_NAME, PREPROCESSING_CONFIG,
+                                 TRAINING_CONFIG, RES_DIR)
+        self.assertEqual(grid_search_cv_mlp.best_score_, saved_model.best_score_)
+        self.assertEqual(grid_search_cv_mlp.best_index_, saved_model.best_index_)
+        self.assertDictEqual(grid_search_cv_mlp.best_params_, saved_model.best_params_)
+
+    def test_save_and_load_model_without_shuffle(self):
+        # Split dataset for classification
+        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(self.preprocessed_data, shuffle=False)
+
+        # Grid Search CV with SVMs
+        svc = svm.SVC()
+        svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [0.1, 1],
+                                 'C': [0.1, 1]},
+                                {'kernel': ["linear"], 'C': [0.1, 1]}]
+        grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
+            get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+        save_model(grid_search_cv_svc, CRYPTO_NAME, PREPROCESSING_CONFIG, self.no_shuffle_training_config, RES_DIR)
+
+        saved_model = load_model(grid_search_cv_svc.estimator.__class__.__name__, CRYPTO_NAME, PREPROCESSING_CONFIG,
+                                 self.no_shuffle_training_config, RES_DIR)
+        self.assertEqual(grid_search_cv_svc.best_score_, saved_model.best_score_)
+        self.assertEqual(grid_search_cv_svc.best_index_, saved_model.best_index_)
+        self.assertDictEqual(grid_search_cv_svc.best_params_, saved_model.best_params_)

@@ -64,9 +64,9 @@ def run_prediction_simulation(cryptonalysis_config):
         # Split dataset for classification
         X, y = split_dataset(preprocessed_data)
 
-        svc_model = load_model('svc', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+        svc_model = load_model('SVC', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
                                cryptonalysis_config.training)
-        mlp_model = load_model('mlp', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+        mlp_model = load_model('MLPClassifier', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
                                cryptonalysis_config.training)
 
         # Evaluation dataset
@@ -76,11 +76,11 @@ def run_prediction_simulation(cryptonalysis_config):
         accuracy = accuracy_score(y_true, y_pred_svc)
         logger.info("Evaluation accuracy (SVC): {}\n".format(accuracy))
 
-        logger.info("Evaluation results for MLP model:")
+        logger.info("Evaluation results for MLPClassifier model:")
         y_true, y_pred_mlp = y, mlp_model.predict(X)
         logger.info('\n' + classification_report(y_true, y_pred_mlp))
         accuracy = accuracy_score(y_true, y_pred_mlp)
-        logger.info("Evaluation accuracy (MLP): {}\n".format(accuracy))
+        logger.info("Evaluation accuracy (MLPClassifier): {}\n".format(accuracy))
 
         # Run transactions to calculate ROI
         # Preprocessing parameters
@@ -102,7 +102,7 @@ def run_prediction_simulation(cryptonalysis_config):
 
         logger.info("Transaction simulation for SVC...")
         predictor.run_transaction_simulation(y_pred_svc.tolist())
-        logger.info("Transaction simulation for MLP...")
+        logger.info("Transaction simulation for MLPClassifier...")
         predictor.run_transaction_simulation(y_pred_mlp.tolist())
 
         logger.info("Prediction simulation complete!\n")
@@ -139,9 +139,9 @@ def predict_for_date(cryptonalysis_config, for_date):
     # Split dataset for classification
     X, y = split_dataset(preprocessed_data)
 
-    svc_model = load_model('svc', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+    svc_model = load_model('SVC', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
                            cryptonalysis_config.training)
-    mlp_model = load_model('mlp', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+    mlp_model = load_model('MLPClassifier', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
                            cryptonalysis_config.training)
 
     # Prediction
@@ -149,8 +149,8 @@ def predict_for_date(cryptonalysis_config, for_date):
     y_pred_mlp = get_transaction_type(mlp_model.predict(X)[0])
 
     return {
-        'svc': y_pred_svc,
-        'mlp': y_pred_mlp
+        'SVC': y_pred_svc,
+        'MLPClassifier': y_pred_mlp
     }
 
 

@@ -131,6 +131,157 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     return clf, best_score, accuracy
 
 
+def save_training_results(classifiers, crypto, preprocessing_config, training_config, results_dir=None):
+    """
+    Save training results to a file.
+    :param classifiers: dictionary of classifiers, containing classifier, training accuracy and eval accuracy.
+    :type classifiers: dict
+    :param crypto: The name of the crypto
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    :param results_dir: (Default None) The (overridden) directory where the results data should be saved.
+    If None, the default `RESULTS_DIR` is used.
+    :type results_dir: str
+    """
+
+    dir_to_use = RESULTS_DIR if results_dir is None else results_dir
+    if not os.path.exists(dir_to_use):
+        os.mkdir(dir_to_use)
+
+    # Human-readable
+    hr_file_name = "results_{}.txt".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
+    logger.info("Saving results to {}...".format(os.path.join(dir_to_use, hr_file_name)))
+    with open(os.path.join(dir_to_use, hr_file_name), 'a') as f:
+        f.write(crypto + '\n')
+        f.write(str(preprocessing_config) + '\n')
+        f.write(str(training_config) + '\n')
+        f.write(str(classifiers) + '\n')
+        f.write('\n**************************************************************\n')
+
+    # CSV
+    csv_file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
+    logger.info("Saving results to {}...".format(os.path.join(dir_to_use, csv_file_name)))
+    classifier_names = sorted(classifiers.keys())
+    classifier_strings = ["{},{}".format(classifiers[k]['training_acc'], classifiers[k]['eval_acc'])
+                          for k in classifier_names]
+    classifiers_header = ','.join(["{}_training,{}_eval".format(k, k)
+                                  for k in classifier_names])
+    classifiers_csv = ','.join(classifier_strings)
+    headers = "{},{},{},{}".format('crypto', preprocessing_config.to_csv_str()[0], training_config.to_csv_str()[0],
+                                   classifiers_header)
+    line = "{},{},{},{}".format(crypto, preprocessing_config.to_csv_str()[1], training_config.to_csv_str()[1],
+                                classifiers_csv)
+
+    file_exists = os.path.isfile(os.path.join(dir_to_use, csv_file_name))
+    with open(os.path.join(dir_to_use, csv_file_name), 'a') as f:
+        if not file_exists:
+            f.write(headers + '\n')
+
+        f.write(line + '\n')
+
+
+def get_model_name(classifier, crypto, preprocessing_config, training_config):
+    """
+    Get a string with the name of the trained model to save/load given preprocessing and training configurations.
+
+    >>> get_model_name('SVC', 'LTC',
+    ...     PreprocessingConfig(
+    ...     {
+    ...         'window_size': 60,
+    ...         'predictor_params': {
+    ...             'lookahead_days': 3, 'prob_buy': 1, 'prob_sell': 1, 'starting_investment': 100, 'daily_allowance': 5
+    ...         },
+    ...         'start_date': '2018-01-01',
+    ...         'end_date': '2019-05-04',
+    ...         'price_column': 'Close',
+    ...         'normalize': True,
+    ...         'normalize_by_row': True,
+    ...         'standardize': False,
+    ...         'predictor_cls': 'BiffPredictor',
+    ...     }),
+    ...     TrainingConfig(
+    ...     {
+    ...         'dev_size': 0.5,
+    ...         'shuffle_data': True,
+    ...         'training_size': 0.7,
+    ...         'cv_folds': 4
+    ...     })
+    ... )
+    'SVC_LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7.joblib'
+
+    :param classifier: The classifier name
+    :type classifier: str
+    :param crypto: The crypto name
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    :return: A file name
+    :rtype: str
+    """
+
+    return "{}_{}_{}_{}.joblib".format(classifier, crypto, preprocessing_config.to_single_line_str(),
+                                       training_config.to_single_line_str())
+
+
+def save_model(classifier, crypto, preprocessing_config, training_config, model_dir=None):
+    """
+    Save a trained model to a file.
+    :param classifier: A trained classifier to save as a model
+    :type classifier: GridSearchCV
+    :param crypto: The name of the crypto
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    :param model_dir: (Default None) The (overridden) directory where the model should be saved.
+    If None, the default `MODELS_DIR` is used.
+    :type model_dir: str
+    """
+
+    dir_to_use = MODELS_DIR if model_dir is None else model_dir
+    if not os.path.exists(dir_to_use):
+        os.mkdir(dir_to_use)
+
+    classifier_type = classifier.estimator.__class__.__name__
+    file_name = get_model_name(classifier_type, crypto, preprocessing_config, training_config)
+    logger.info("Saving model {}...".format(file_name))
+    dump(classifier, os.path.join(dir_to_use, file_name))
+
+
+def load_model(classifier_type, crypto, preprocessing_config, training_config, model_dir=None):
+    """
+    Load trained model from a file.
+    :param classifier_type: name of the classifier whose model will be loaded, such as 'SVC' or 'MLPClassifier'
+    :type classifier_type: str
+    :param crypto: The name of the crypto
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    :param model_dir: (Default None) The (overridden) directory where the model should be loaded from.
+    If None, the default `MODELS_DIR` is used.
+    :type model_dir: str
+    :return A trained model
+    :rtype: GridSearchCV
+    """
+
+    dir_to_use = MODELS_DIR if model_dir is None else model_dir
+    file_name = get_model_name(classifier_type, crypto, preprocessing_config, training_config)
+    logger.info("Loading model {}...".format(file_name))
+    try:
+        model = load(os.path.join(dir_to_use, file_name))
+        return model
+    except IOError:
+        raise ValueError("Model with name '{}' not found!".format(file_name))
+
+
 def run_training_pipeline(preprocessed_df, training_config):
     """
     Run the classification pipeline. The function returns a dictionary of optimized and trained classification models.
@@ -186,147 +337,6 @@ def run_training_pipeline(preprocessed_df, training_config):
     return trained_classifiers
 
 
-def save_training_results(classifiers, crypto, preprocessing_config, training_config):
-    """
-    Save training results to a file.
-    :param classifiers: dictionary of classifiers, containing classifier, training accuracy and eval accuracy.
-    :type classifiers: dict
-    :param crypto: The name of the crypto
-    :type crypto: str
-    :param preprocessing_config
-    :type preprocessing_config: PreprocessingConfig
-    :param training_config
-    :type training_config: TrainingConfig
-    """
-    logger.info('Saving results...')
-    if not os.path.exists(RESULTS_DIR):
-        os.mkdir(RESULTS_DIR)
-
-    # Human-readable
-    hr_file_name = "results_{}.txt".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
-    with open(os.path.join(RESULTS_DIR, hr_file_name), 'a') as f:
-        f.write(crypto + '\n')
-        f.write(str(preprocessing_config) + '\n')
-        f.write(str(training_config) + '\n')
-        f.write(str(classifiers) + '\n')
-        f.write('\n**************************************************************\n')
-
-    # CSV
-    csv_file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, csv_file_name)))
-    classifier_names = sorted(classifiers.keys())
-    classifier_strings = ["{},{}".format(classifiers[k]['training_acc'], classifiers[k]['eval_acc'])
-                          for k in classifier_names]
-    classifiers_header = ','.join(["{}_training,{}_eval".format(k, k)
-                                  for k in classifier_names])
-    classifiers_csv = ','.join(classifier_strings)
-    headers = "{},{},{},{}".format('crypto', preprocessing_config.to_csv_str()[0], training_config.to_csv_str()[0],
-                                   classifiers_header)
-    line = "{},{},{},{}".format(crypto, preprocessing_config.to_csv_str()[1], training_config.to_csv_str()[1],
-                                classifiers_csv)
-
-    file_exists = os.path.isfile(os.path.join(RESULTS_DIR, csv_file_name))
-    with open(os.path.join(RESULTS_DIR, csv_file_name), 'a') as f:
-        if not file_exists:
-            f.write(headers + '\n')
-
-        f.write(line + '\n')
-
-
-def save_models(classifiers, crypto, preprocessing_config, training_config):
-    """
-    Save trained models to a file.
-    :param classifiers: dictionary of classifiers, containing classifier, training accuracy and eval accuracy.
-    :type classifiers: dict
-    :param crypto: The name of the crypto
-    :type crypto: str
-    :param preprocessing_config
-    :type preprocessing_config: PreprocessingConfig
-    :param training_config
-    :type training_config: TrainingConfig
-    """
-    if not os.path.exists(MODELS_DIR):
-        os.mkdir(MODELS_DIR)
-
-    svc = classifiers['svc']['classifier']
-    svc_file_name = get_model_name('svc', crypto, preprocessing_config, training_config)
-    logger.info("Saving model {}...".format({svc_file_name}))
-    dump(svc, os.path.join(MODELS_DIR, svc_file_name))
-
-    mlp = classifiers['mlp']['classifier']
-    mlp_file_name = get_model_name('mlp', crypto, preprocessing_config, training_config)
-    logger.info("Saving model {}...".format({mlp_file_name}))
-    dump(mlp, os.path.join(MODELS_DIR, mlp_file_name))
-
-
-def load_model(classifier, crypto, preprocessing_config, training_config):
-    """
-    Load trained model from a file.
-    :param classifier: name of the classifier whose model will be loaded, such as 'svc' or 'mlp'
-    :type classifier: str
-    :param crypto: The name of the crypto
-    :type crypto: str
-    :param preprocessing_config
-    :type preprocessing_config: PreprocessingConfig
-    :param training_config
-    :type training_config: TrainingConfig
-    :return A trained model
-    """
-    file_name = get_model_name(classifier, crypto, preprocessing_config, training_config)
-    logger.info("Loading model {}...".format({file_name}))
-    try:
-        model = load(os.path.join(MODELS_DIR, file_name))
-        return model
-    except IOError:
-        raise ValueError("Model with name '{}' not found!".format(file_name))
-
-
-def get_model_name(classifier, crypto, preprocessing_config, training_config):
-    """
-    Get a string with the name of the trained model to save/load given preprocessing and training configurations.
-
-    >>> get_model_name('svc', 'LTC',
-    ...     PreprocessingConfig(
-    ...     {
-    ...         'window_size': 60,
-    ...         'predictor_params': {
-    ...             'lookahead_days': 3, 'prob_buy': 1, 'prob_sell': 1, 'starting_investment': 100, 'daily_allowance': 5
-    ...         },
-    ...         'start_date': '2018-01-01',
-    ...         'end_date': '2019-05-04',
-    ...         'price_column': 'Close',
-    ...         'normalize': True,
-    ...         'normalize_by_row': True,
-    ...         'standardize': False,
-    ...         'predictor_cls': 'BiffPredictor',
-    ...     }),
-    ...     TrainingConfig(
-    ...     {
-    ...         'dev_size': 0.5,
-    ...         'shuffle_data': True,
-    ...         'training_size': 0.7,
-    ...         'cv_folds': 4
-    ...     })
-    ... )
-    'svc_LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7.joblib'
-
-    :param classifier: The classifier name
-    :type classifier: str
-    :param crypto: The crypto name
-    :type crypto: str
-    :param preprocessing_config
-    :type preprocessing_config: PreprocessingConfig
-    :param training_config
-    :type training_config: TrainingConfig
-    :return: A file name
-    :rtype: str
-    """
-
-    return "{}_{}_{}_{}.joblib".format(classifier, crypto, preprocessing_config.to_single_line_str(),
-                                       training_config.to_single_line_str())
-
-
 def run_classic_training(cryptonalysis_config_grid):
     """
     Run classic training using grid search hyperparameter optimization.
@@ -358,7 +368,8 @@ def run_classic_training(cryptonalysis_config_grid):
                     if cryptonalysis_config_grid.save_training_results:
                         save_training_results(classifiers, crypto, preprocessing_config, training_config)
                     if cryptonalysis_config_grid.save_training_model:
-                        save_models(classifiers, crypto, preprocessing_config, training_config)
+                        for classifier_data in classifiers.values():
+                            save_model(classifier_data['classifier'], crypto, preprocessing_config, training_config)
                 except Exception as e:
                     logger.error("Error in training pipeline! Skipping...")
                     logger.error(e)

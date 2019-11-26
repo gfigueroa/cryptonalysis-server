@@ -70,7 +70,8 @@ def get_crypto_data_for_date(crypto_name, for_date, window_size):
     For example, if the value is 10, 10 rows of data will be retrieved between the day before `for_date` and -10 days,
     both inclusive.
     :type window_size: int
-    :return:
+    :return: A DataFrame with cryptocurrency data for a single given date.
+    :rtype: pd.DataFrame
     """
     logger.info("Getting {} data for {} with window size {}...".format(crypto_name, for_date, window_size))
 
