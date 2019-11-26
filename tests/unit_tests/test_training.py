@@ -2,7 +2,6 @@
 Unit tests for the training.py module.
 """
 
-import copy
 import numpy
 import os
 import pandas as pd
@@ -17,8 +16,6 @@ from sklearn import svm
 from sklearn.neural_network import MLPClassifier
 
 RES_DIR = os.path.join('tests', 'resources')
-HISTORICAL_TEST_DATA = 'historical_test_data.csv'
-HISTORICAL_TEST_FILE = os.path.join(RES_DIR, HISTORICAL_TEST_DATA)
 
 
 # Preprocessing constants for tests
@@ -68,14 +65,19 @@ class TestTrainingFunctions(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestTrainingFunctions, self).__init__(*args, **kwargs)
 
-        # No-shuffle config
-        no_shuffle_training_config_dict = copy.deepcopy(TRAINING_CONFIG.config_dict)
-        no_shuffle_training_config_dict['shuffle'] = False
-        self.no_shuffle_training_config = TrainingConfig(no_shuffle_training_config_dict)
-
         self.preprocessed_data = \
             load_preprocessed_data(crypto_name=CRYPTO_NAME, preprocessing_config=PREPROCESSING_CONFIG,
                                    preprocessed_data_dir=RES_DIR)
+
+        self.svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [0.1, 1],
+                                     'C': [0.1, 1]},
+                                     {'kernel': ["linear"], 'C': [0.1, 1]}]
+        self.mlp_tuned_parameters = {
+            'learning_rate': ["constant", "invscaling"],
+            'hidden_layer_sizes': [(10, 10), (20, 20)],
+            'alpha': [0.1, 1],
+            'activation': ["identity", "logistic"]
+        }
 
         # Always have the same random arrangements
         random.seed(1)
@@ -110,28 +112,20 @@ class TestTrainingFunctions(unittest.TestCase):
 
         # Grid Search CV with SVMs
         svc = svm.SVC()
-        svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [0.1, 1],
-                                 'C': [0.1, 1]},
-                                {'kernel': ["linear"], 'C': [0.1, 1]}]
+
         # Check y_dev contains both classes at least K times
         if len(y_dev[y_dev == 0]) < CV_FOLDS or len(y_dev[y_dev == 1]) < CV_FOLDS:
             with self.assertRaises(ValueError):
-                get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+                get_optimized_classifier(svc, self.svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
         else:
             grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
-                get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+                get_optimized_classifier(svc, self.svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
             self.assertEqual(grid_search_cv_svc.best_score_, svc_training_acc)
 
         # Grid Search CV with NNs
         mlp = MLPClassifier()
-        mlp_tuned_parameters = {
-            'learning_rate': ["constant", "invscaling"],
-            'hidden_layer_sizes': [(10, 10), (20, 20)],
-            'alpha': [0.1, 1],
-            'activation': ["identity", "logistic"]
-        }
         grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
-            get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+            get_optimized_classifier(mlp, self.mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
         self.assertEqual(grid_search_cv_mlp.best_score_, mlp_training_acc)
 
     def test_get_optimized_classifier_without_shuffle(self):
@@ -140,41 +134,26 @@ class TestTrainingFunctions(unittest.TestCase):
 
         # Grid Search CV with SVMs
         svc = svm.SVC()
-        svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [0.1, 1],
-                                 'C': [0.1, 1]},
-                                {'kernel': ["linear"], 'C': [0.1, 1]}]
         grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
-            get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+            get_optimized_classifier(svc, self.svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
         self.assertAlmostEquals(svc_training_acc, 0.71429, 5)
         self.assertEqual(svc_eval_acc, 0.5)
 
         # Grid Search CV with NNs
         mlp = MLPClassifier()
-        mlp_tuned_parameters = {
-            'learning_rate': ["constant", "invscaling"],
-            'hidden_layer_sizes': [(10, 10), (20, 20)],
-            'alpha': [0.1, 1],
-            'activation': ["identity", "logistic"]
-        }
         grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
-            get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+            get_optimized_classifier(mlp, self.mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
         self.assertAlmostEquals(mlp_training_acc, 0.71429, 5)
         self.assertEqual(mlp_eval_acc, 0.125)
 
-    def test_save_and_load_model_with_shuffle(self):
+    def test_save_and_load_model(self):
         # Split dataset for classification
         _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(self.preprocessed_data, shuffle=SHUFFLE)
 
         # Grid Search CV with NNs
         mlp = MLPClassifier()
-        mlp_tuned_parameters = {
-            'learning_rate': ["constant", "invscaling"],
-            'hidden_layer_sizes': [(10, 10), (20, 20)],
-            'alpha': [0.1, 1],
-            'activation': ["identity", "logistic"]
-        }
         grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
-            get_optimized_classifier(mlp, mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
+            get_optimized_classifier(mlp, self.mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
         save_model(grid_search_cv_mlp, CRYPTO_NAME, PREPROCESSING_CONFIG, TRAINING_CONFIG, RES_DIR)
 
         saved_model = load_model(grid_search_cv_mlp.estimator.__class__.__name__, CRYPTO_NAME, PREPROCESSING_CONFIG,
@@ -183,21 +162,14 @@ class TestTrainingFunctions(unittest.TestCase):
         self.assertEqual(grid_search_cv_mlp.best_index_, saved_model.best_index_)
         self.assertDictEqual(grid_search_cv_mlp.best_params_, saved_model.best_params_)
 
-    def test_save_and_load_model_without_shuffle(self):
-        # Split dataset for classification
-        _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(self.preprocessed_data, shuffle=False)
-
         # Grid Search CV with SVMs
         svc = svm.SVC()
-        svm_tuned_parameters = [{'kernel': ["rbf", "poly"], 'gamma': [0.1, 1],
-                                 'C': [0.1, 1]},
-                                {'kernel': ["linear"], 'C': [0.1, 1]}]
         grid_search_cv_svc, svc_training_acc, svc_eval_acc = \
-            get_optimized_classifier(svc, svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
-        save_model(grid_search_cv_svc, CRYPTO_NAME, PREPROCESSING_CONFIG, self.no_shuffle_training_config, RES_DIR)
+            get_optimized_classifier(svc, self.svm_tuned_parameters, X_dev, y_dev, X_eval, y_eval, CV_FOLDS)
+        save_model(grid_search_cv_svc, CRYPTO_NAME, PREPROCESSING_CONFIG, TRAINING_CONFIG, RES_DIR)
 
         saved_model = load_model(grid_search_cv_svc.estimator.__class__.__name__, CRYPTO_NAME, PREPROCESSING_CONFIG,
-                                 self.no_shuffle_training_config, RES_DIR)
+                                 TRAINING_CONFIG, RES_DIR)
         self.assertEqual(grid_search_cv_svc.best_score_, saved_model.best_score_)
         self.assertEqual(grid_search_cv_svc.best_index_, saved_model.best_index_)
         self.assertDictEqual(grid_search_cv_svc.best_params_, saved_model.best_params_)

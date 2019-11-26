@@ -28,7 +28,8 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     """
 
     start_date_str = start_date.strftime('%Y%m%d')
-    end_date_str = end_date.strftime('%Y%m%d')
+    adjusted_end_date = end_date - timedelta(days=1)  # The API always returns an extra day
+    end_date_str = adjusted_end_date.strftime('%Y%m%d')
     crypto_endpoint = "{}?start={}&end={}".format(API_URLS[crypto_name], start_date_str, end_date_str)
 
     df = pd.read_html(crypto_endpoint)[2]  # Format change

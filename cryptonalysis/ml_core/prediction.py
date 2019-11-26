@@ -18,8 +18,6 @@ from sklearn.metrics import classification_report, accuracy_score
 # Logging
 logger = logging.getLogger()
 
-RESULTS_DIR = os.path.join('cryptonalysis', 'results')
-
 
 def split_dataset(df):
     """
@@ -112,37 +110,43 @@ def run_prediction_simulation(cryptonalysis_config):
         raise e
 
 
-def predict_for_date(cryptonalysis_config, for_date):
+def predict_for_date(crypto_name, preprocessing_config, training_config, for_date, scaler_dir=None, model_dir=None):
     """
     Predict a transaction (BUY/SELL) for a given date with a given CryptonalysisConfig object.
     The data for the given date is extracted from a remote location and preprocessed given the specific configuration.
     A presaved model is loaded with the given configuration to make the prediction.
-    :param cryptonalysis_config: A configuration object
-    :type cryptonalysis_config: CryptonalysisConfig
+    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
+    :type crypto_name: str
+    :param preprocessing_config: The preprocessing configuration object
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config: The training configuration object
+    :type training_config: TrainingConfig
     :param for_date: The date for which to make a transaction prediction.
     :type for_date: date
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler should be loaded. If None, the default
+    `PREPROCESSED_DATA_DIR` is used.
+    :type scaler_dir: str
+    :param model_dir: (Default None) The (overridden) directory where the model should be loaded from.
+    If None, the default `MODELS_DIR` is used.
+    :type model_dir: str
     :return: A dictionary of predictions per classification type. For example:
     {
-        svc: BUY,
-        mlp: SELL
+        SVC: BUY,
+        MLPClassifier: SELL
     }
     :rtype: dict
     """
     logging.info("Obtaining crypto predictions for {}...".format(for_date))
-    crypto_data = get_crypto_data_for_date(cryptonalysis_config.crypto, for_date,
-                                           cryptonalysis_config.preprocessing.window_size)
+    crypto_data = get_crypto_data_for_date(crypto_name, for_date, preprocessing_config.window_size)
 
     # Preprocess the data
-    preprocessed_data = preprocess_data_point(crypto_data, cryptonalysis_config.crypto,
-                                              cryptonalysis_config.preprocessing)
+    preprocessed_data = preprocess_data_point(crypto_data, crypto_name, preprocessing_config, scaler_dir)
 
     # Split dataset for classification
     X, y = split_dataset(preprocessed_data)
 
-    svc_model = load_model('SVC', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
-                           cryptonalysis_config.training)
-    mlp_model = load_model('MLPClassifier', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
-                           cryptonalysis_config.training)
+    svc_model = load_model('SVC', crypto_name, preprocessing_config, training_config, model_dir)
+    mlp_model = load_model('MLPClassifier', crypto_name, preprocessing_config, training_config, model_dir)
 
     # Prediction
     y_pred_svc = get_transaction_type(svc_model.predict(X)[0])
@@ -174,7 +178,7 @@ if __name__ == '__main__':
         run_prediction_simulation(config)
     elif action == 'prediction':
         today = parse_date('today')
-        predictions = predict_for_date(config, today)
+        predictions = predict_for_date(config.crypto, config.preprocessing, config.training, today)
         logger.info("Predictions:\n{}".format(predictions))
     else:
         logger.error("Wrong action \"{}\". Must be \"simulation\" or \"prediction\".".format(action))
