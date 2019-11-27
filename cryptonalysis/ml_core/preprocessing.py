@@ -436,16 +436,13 @@ def preprocess_data_point(df, crypto_name, preprocessing_config, scaler_dir=None
     price_column = preprocessing_config.price_column
     price_list = get_price_list(df, price_column)
 
-    # Check if dates are outside price_list time range
-    #preprocessing_config.adjust_dates(df.index)
-
     # Preprocessing parameters
     window_size = preprocessing_config.window_size
     normalize = preprocessing_config.normalize
     normalize_by_row = preprocessing_config.normalize_by_row
     standardize = preprocessing_config.standardize
 
-    transactions = [{'transaction': 'UNKNOWN', 'prices': price_list[:window_size]}]  # Ensure window size
+    transactions = [{'transaction': 'UNKNOWN', 'prices': price_list[-window_size:]}]  # Ensure window size
     transactions_df = build_transactions_df(transactions)
 
     # Data normalization

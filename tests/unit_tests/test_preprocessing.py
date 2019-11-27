@@ -13,6 +13,7 @@ from cryptonalysis.ml_core.preprocessing import get_historical_df, build_transac
     preprocess_data_point, save_scaler, load_scaler
 from cryptonalysis.ml_core.transaction_builders import get_transaction_type,\
     get_predictor_class_from_name
+from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from datetime import date
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
@@ -332,6 +333,18 @@ class TestPreprocessingFunctions(unittest.TestCase):
         self.assertEqual(transaction_df.index[0], pd.Timestamp('2019-01-20 00:00:00'))
         self.assertAlmostEquals(transaction_df.iloc[0, 0], -1.26325, 5)
         self.assertAlmostEquals(transaction_df.iloc[0, 4], -1.03004, 5)
+        expected_transaction = ['UNKNOWN']
+        actual_transaction = [get_transaction_type(t) for t in list(transaction_df['transaction'])]
+        self.assertListEqual(expected_transaction, actual_transaction)
+
+        # Run default preprocessing with single date
+        crypto_data = get_crypto_data_for_date(CRYPTO_NAME, for_date=ENDING_DATE, window_size=WINDOW_SIZE)
+        transaction_df = preprocess_data_point(crypto_data, crypto_name=CRYPTO_NAME,
+                                               preprocessing_config=PREPROCESSING_CONFIG, scaler_dir=RES_DIR)
+        self.assertEquals(transaction_df.shape, (1, 6))
+        self.assertEqual(transaction_df.index[0], pd.Timestamp('2019-01-19 00:00:00'))  # Previous day
+        self.assertEqual(transaction_df.iloc[0, 3], 0)
+        self.assertEqual(transaction_df.iloc[0, 4], 1)
         expected_transaction = ['UNKNOWN']
         actual_transaction = [get_transaction_type(t) for t in list(transaction_df['transaction'])]
         self.assertListEqual(expected_transaction, actual_transaction)
