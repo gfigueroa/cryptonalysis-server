@@ -26,6 +26,12 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     :return: A cleansed DataFrame with cryptocurrency data.
     :rtype: pd.DataFrame
     """
+    current_date = parse_date('today')
+    if start_date > current_date or end_date > current_date:
+        raise ValueError('start_date and end_date must be before or equal to today!')
+
+    if start_date >= end_date:
+        raise ValueError('start_date must be before end_date!')
 
     start_date_str = start_date.strftime('%Y%m%d')
     adjusted_end_date = end_date - timedelta(days=1)  # The API always returns an extra day
@@ -74,6 +80,10 @@ def get_crypto_data_for_date(crypto_name, for_date, window_size):
     :return: A DataFrame with cryptocurrency data for a single given date.
     :rtype: pd.DataFrame
     """
+    current_date = parse_date('today')
+    if for_date > current_date:
+        raise ValueError('for_date cannot be after today!')
+
     logger.info("Getting {} data for {} with window size {}...".format(crypto_name, for_date, window_size))
 
     start_date = for_date - timedelta(days=window_size)
