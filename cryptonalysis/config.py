@@ -23,17 +23,25 @@ class Config(object):
         flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
         sorted_keys = sorted(flat_config_dict.keys())
         sorted_keys_str = ','.join(sorted_keys)
-        values = ','.join([str(flat_config_dict[k]) for k in sorted_keys])
+        values = ','.join([str(flat_config_dict[k]
+                               if type(flat_config_dict[k]) is not date else flat_config_dict[k].strftime('%Y-%m-%d'))
+                           for k in sorted_keys])
         return sorted_keys_str, values
 
     def to_single_line_str(self):
         flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
         sorted_keys = sorted(flat_config_dict.keys())
-        values = ''.join([str(flat_config_dict[k]) for k in sorted_keys])
+        values = ''.join([str(flat_config_dict[k]
+                              if type(flat_config_dict[k]) is not date else flat_config_dict[k].strftime('%Y-%m-%d'))
+                          for k in sorted_keys])
         return values
 
     def __str__(self):
-        return json.dumps(self.config_dict, indent=2)
+        serializable_dict = {
+            k: v if type(v) is not date else v.strftime('%Y-%m-%d')
+            for k, v in self.config_dict.items()
+        }
+        return json.dumps(serializable_dict, indent=2)
 
 
 class PreprocessingConfig(Config):
@@ -69,14 +77,14 @@ class PreprocessingConfig(Config):
             self.start_date = start_date if type(start_date) is date else misc_utils.parse_date(start_date)
         else:
             self.start_date = PreprocessingConfig.START_DATE
-            preprocessing_config_dict['start_date'] = self.start_date.strftime('%Y-%m-%d')
+        preprocessing_config_dict['start_date'] = self.start_date
 
         if 'end_date' in preprocessing_config_dict:
             end_date = preprocessing_config_dict['end_date']
             self.end_date = end_date if type(end_date) is date else misc_utils.parse_date(end_date)
         else:
             self.end_date = PreprocessingConfig.END_DATE
-            preprocessing_config_dict['end_date'] = self.end_date.strftime('%Y-%m-%d')
+        preprocessing_config_dict['end_date'] = self.end_date
 
         self.window_size = preprocessing_config_dict['window_size'] = preprocessing_config_dict['window_size'] \
             if 'window_size' in preprocessing_config_dict else PreprocessingConfig.WINDOW_SIZE
@@ -119,9 +127,6 @@ class PreprocessingConfig(Config):
             self.start_date = date_index[0].date()  # First date in DataFrame
         if self.end_date < date_index[0].date() or self.end_date > date_index[-1].date():
             self.end_date = date_index[-1].date()  # Last date in DataFrame
-
-    def __str__(self):
-        return json.dumps(self.config_dict, indent=2)
 
 
 class TrainingConfig(Config):

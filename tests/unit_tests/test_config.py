@@ -25,14 +25,14 @@ class TestConfig(unittest.TestCase):
 
         # Test single-line and csv string representations
         pc_s = pc.to_single_line_str()
-        self.assertEqual(pc_s, '2018-01-31TrueFalseBiffPredictor5111100CloseFalse2018-01-0110')
+        self.assertEqual(pc_s, '2019-01-20TrueFalseBiffPredictor5111100CloseFalse2019-01-0110')
         pc_csv = pc.to_csv_str()
         self.assertEqual(pc_csv[0], u'end_date,normalize,normalize_by_row,predictor_cls,'
                                     u'predictor_params.daily_allowance,predictor_params.lookahead_days,'
                                     u'predictor_params.prob_buy,predictor_params.prob_sell,'
                                     u'predictor_params.starting_investment,price_column,standardize,start_date,'
                                     u'window_size')
-        self.assertEqual(pc_csv[1], '2018-01-31,True,False,BiffPredictor,5,1,1,1,100,Close,False,2018-01-01,10')
+        self.assertEqual(pc_csv[1], '2019-01-20,True,False,BiffPredictor,5,1,1,1,100,Close,False,2019-01-01,10')
 
         tc_s = tc.to_single_line_str()
         self.assertEqual(tc_s, '40.5True0.7')
