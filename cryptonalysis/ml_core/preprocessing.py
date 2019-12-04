@@ -456,7 +456,8 @@ def preprocess_data_point(df, crypto_name, preprocessing_config, scaler_dir=None
     return transactions_df
 
 
-def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, save_roi):
+def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, save_roi, master_data_dir=None,
+                               preprocessed_data_dir=None, scaler_dir=None):
     """
     Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for training.
     :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
@@ -467,6 +468,15 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     :type save_data: bool
     :param save_roi: Whether or not to save the preprocessing ROI to a local file for analysis
     :type save_roi: bool
+    :param master_data_dir: (Default None) The (overridden) directory where the master data is located. If None, the
+    default `MASTER_DATA_DIR` is used.
+    :type master_data_dir: str
+    :param preprocessed_data_dir: (Default None) The (overridden) directory where the preprocessed data is located. If
+    None, the default `PREPROCESSED_DATA_DIR` is used.
+    :type master_data_dir: str
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler is located. If None, the default
+    `SCALER_DIR` is used.
+    :type master_data_dir: str
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
     :rtype: DataFrame
     """
@@ -475,7 +485,8 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     logger.info("Preprocessing config:\n" + str(preprocessing_config))
 
     # Get DF
-    historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
+    master_data_dir_to_use = master_data_dir or MASTER_DATA_DIR
+    historical_file = os.path.join(master_data_dir_to_use, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
     df = get_historical_df(historical_file)
 
     # Check if dates are outside price_list time range
@@ -483,16 +494,18 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
 
     # Load preprocessed data file if it exists
     if save_data:
-        transactions_df = load_preprocessed_data(crypto_name, preprocessing_config)
+        transactions_df = load_preprocessed_data(crypto_name, preprocessing_config,
+                                                 preprocessed_data_dir=preprocessed_data_dir)
         if transactions_df is not None:
             return transactions_df
 
     # Preprocess the data
-    transactions_df = preprocess_dataframe(df, crypto_name, preprocessing_config, save_roi)
+    transactions_df = preprocess_dataframe(df, crypto_name, preprocessing_config, save_roi, scaler_dir=scaler_dir)
 
     # Save data
     if save_data:
-        save_preprocessed_data(transactions_df, crypto_name, preprocessing_config)
+        save_preprocessed_data(transactions_df, crypto_name, preprocessing_config,
+                               preprocessed_data_dir=preprocessed_data_dir)
 
     logger.info("Preprocessing pipeline complete!\n")
 
