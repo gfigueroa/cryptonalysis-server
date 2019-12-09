@@ -131,7 +131,49 @@ def get_optimized_classifier(classifier, tuned_parameters, X_dev, y_dev, X_eval,
     return clf, best_score, accuracy
 
 
-def save_training_results(classifiers, crypto, preprocessing_config, training_config, results_dir=None):
+def _get_training_run_name(crypto, preprocessing_config, training_config):
+    """
+    Get a string with the name of the training run given preprocessing and training configurations.
+
+    >>> _get_training_run_name('LTC',
+    ...     PreprocessingConfig(
+    ...     {
+    ...         'window_size': 60,
+    ...         'predictor_params': {
+    ...             'lookahead_days': 3, 'prob_buy': 1, 'prob_sell': 1, 'starting_investment': 100, 'daily_allowance': 5
+    ...         },
+    ...         'start_date': '2018-01-01',
+    ...         'end_date': '2019-05-04',
+    ...         'price_column': 'Close',
+    ...         'normalize': True,
+    ...         'normalize_by_row': True,
+    ...         'standardize': False,
+    ...         'predictor_cls': 'BiffPredictor',
+    ...     }),
+    ...     TrainingConfig(
+    ...     {
+    ...         'dev_size': 0.5,
+    ...         'shuffle_data': True,
+    ...         'training_size': 0.7,
+    ...         'cv_folds': 4
+    ...     })
+    ... )
+    'LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7'
+
+    :param crypto: The crypto name
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    :return: A file name
+    :rtype: str
+    """
+
+    return "{}_{}_{}".format(crypto, preprocessing_config.to_single_line_str(), training_config.to_single_line_str())
+
+
+def save_training_results(classifiers, crypto, preprocessing_config, training_config):
     """
     Save training results to a file.
     :param classifiers: dictionary of classifiers, containing classifier, training accuracy and eval accuracy.
@@ -142,19 +184,15 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
     :type preprocessing_config: PreprocessingConfig
     :param training_config
     :type training_config: TrainingConfig
-    :param results_dir: (Default None) The (overridden) directory where the results data should be saved.
-    If None, the default `RESULTS_DIR` is used.
-    :type results_dir: str
     """
 
-    dir_to_use = RESULTS_DIR if results_dir is None else results_dir
-    if not os.path.exists(dir_to_use):
-        os.mkdir(dir_to_use)
+    if not os.path.exists(RESULTS_DIR):
+        os.mkdir(RESULTS_DIR)
 
     # Human-readable
     hr_file_name = "results_{}.txt".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(dir_to_use, hr_file_name)))
-    with open(os.path.join(dir_to_use, hr_file_name), 'a') as f:
+    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
+    with open(os.path.join(RESULTS_DIR, hr_file_name), 'a') as f:
         f.write(crypto + '\n')
         f.write(str(preprocessing_config) + '\n')
         f.write(str(training_config) + '\n')
@@ -163,7 +201,7 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
 
     # CSV
     csv_file_name = "results_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
-    logger.info("Saving results to {}...".format(os.path.join(dir_to_use, csv_file_name)))
+    logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, csv_file_name)))
     classifier_names = sorted(classifiers.keys())
     classifier_strings = ["{},{}".format(classifiers[k]['training_acc'], classifiers[k]['eval_acc'])
                           for k in classifier_names]
@@ -175,12 +213,16 @@ def save_training_results(classifiers, crypto, preprocessing_config, training_co
     line = "{},{},{},{}".format(crypto, preprocessing_config.to_csv_str()[1], training_config.to_csv_str()[1],
                                 classifiers_csv)
 
-    file_exists = os.path.isfile(os.path.join(dir_to_use, csv_file_name))
-    with open(os.path.join(dir_to_use, csv_file_name), 'a') as f:
+    file_exists = os.path.isfile(os.path.join(RESULTS_DIR, csv_file_name))
+    with open(os.path.join(RESULTS_DIR, csv_file_name), 'a') as f:
         if not file_exists:
             f.write(headers + '\n')
 
         f.write(line + '\n')
+
+    training_run_touch_file = _get_training_run_name(crypto, preprocessing_config, training_config)
+    with open(os.path.join(RESULTS_DIR, training_run_touch_file), 'w') as f:
+        f.write('complete')
 
 
 def get_model_name(classifier, crypto, preprocessing_config, training_config):
@@ -223,9 +265,8 @@ def get_model_name(classifier, crypto, preprocessing_config, training_config):
     :return: A file name
     :rtype: str
     """
-
-    return "{}_{}_{}_{}.joblib".format(classifier, crypto, preprocessing_config.to_single_line_str(),
-                                       training_config.to_single_line_str())
+    training_run_name = _get_training_run_name(crypto, preprocessing_config, training_config)
+    return "{}_{}.joblib".format(classifier, training_run_name)
 
 
 def save_model(classifier, crypto, preprocessing_config, training_config, model_dir=None):
@@ -363,6 +404,14 @@ def run_classic_training(cryptonalysis_config_grid):
             # Grid search training pipeline parameters
             for training_config in cryptonalysis_config_grid.training_config_grid:
                 logger.info("Processing configuration {}/{}...".format(count, cryptonalysis_config_grid.grid_size))
+
+                # Check if training run has been executed
+                if cryptonalysis_config_grid.save_training_results:
+                    training_run_touch_file = _get_training_run_name(crypto, preprocessing_config, training_config)
+                    if os.path.exists(os.path.join(RESULTS_DIR, training_run_touch_file)):
+                        logger.info("Training run has already been executed, skipping...")
+                        continue
+
                 try:
                     classifiers = run_training_pipeline(preprocessed_data, training_config)
                     if cryptonalysis_config_grid.save_training_results:
@@ -371,7 +420,7 @@ def run_classic_training(cryptonalysis_config_grid):
                         for classifier_data in classifiers.values():
                             save_model(classifier_data['classifier'], crypto, preprocessing_config, training_config)
                 except Exception as e:
-                    logger.error("Error in training pipeline! Skipping...")
+                    logger.error("Error in training pipeline {}! Skipping...".format(e.message))
                     logger.error(e)
                 count += 1
 

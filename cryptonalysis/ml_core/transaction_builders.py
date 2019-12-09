@@ -9,7 +9,7 @@ from pandas import Series
 # Logging
 logger = logging.getLogger()
 
-DUMP_DIR = os.path.join(os.path.pardir, 'dump')
+DUMP_DIR = os.path.join('cryptonalysis', 'data', 'dump')
 TRANSACTION_TYPE = {
     'BUY': 1,
     'SELL': 0,
@@ -414,7 +414,9 @@ class CryptoPredictor(object):
         logger.info("Owned crypto: {0} {1}".format(self._crypto_name, round(self.owned_crypto, 4)))
         logger.info("Total investment: ${0}".format(round(self.total_investment, 2)))
         roi = self.cash - self.total_investment
+        roi_perc = roi / self.total_investment
         logger.info("ROI: ${0}".format(round(roi, 2)))
+        logger.info("ROI %: {}%".format(round(roi_perc * 100, 2)))
         logger.info("*" * 20)
 
         # Save ROI
@@ -424,27 +426,16 @@ class CryptoPredictor(object):
             file_name = "roi_b{}_s{}.csv".format(self.prob_buy, self.prob_sell)
             file_exists = os.path.isfile(os.path.join(DUMP_DIR, file_name))
             with open(os.path.join(DUMP_DIR, file_name), 'a') as f:
-                col_names = ['crypto', 'roi', 'predictor', 'start_date', 'end_date', 'prob_buy', 'prob_sell',
+                col_names = ['crypto', 'roi', 'roi_perc', 'predictor', 'start_date', 'end_date', 'prob_buy', 'prob_sell',
                              'lookahead']
-                col_vals = [self._crypto_name, round(roi, 2), self.__class__.__name__, self._starting_date,
-                            self.ending_date, self.prob_buy, self.prob_sell, self.lookahead_days]
+                col_vals = [self._crypto_name, round(roi, 2), round(roi_perc, 2), self.__class__.__name__,
+                            self._starting_date, self.ending_date, self.prob_buy, self.prob_sell, self.lookahead_days]
 
                 # Write headers
                 if not file_exists:
                     f.write("{}\n".format(','.join(col_names)))
 
                 line = ','.join([str(val) for val in col_vals]) + '\n'
-                '''
-                line = \
-                    "({}) ${} - {} ({} - {}) (p_buy={}, p_sell={}, lookahead={})\n".format(self._crypto_name,
-                                                                                           round(roi, 2),
-                                                                                           self.__class__.__name__,
-                                                                                           self._starting_date,
-                                                                                           self.ending_date,
-                                                                                           self.prob_buy,
-                                                                                           self.prob_sell,
-                                                                                           self.lookahead_days)
-                '''
                 f.write(line)
 
 

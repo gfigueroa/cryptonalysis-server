@@ -22,6 +22,7 @@ CRYPTOCURRENCIES = {
     'LTC': "litecoin",
     'USDT': "tether"
 }
+RUNS = 1
 
 
 def get_historical_df(historical_file):
@@ -545,8 +546,12 @@ if __name__ == '__main__':
 
     config_file = sys.argv[1]
 
-    RUNS = 10  # Number of runs for ROI stats
+    if len(sys.argv) > 2:
+        runs = int(sys.argv[2])
+    else:
+        runs = RUNS
+
     config_path = 'config'
     config_grid = load_cryptonalysis_config_grid(config_path, config_file)
 
-    run_preprocessing(config_grid, RUNS)
+    run_preprocessing(config_grid, runs)
