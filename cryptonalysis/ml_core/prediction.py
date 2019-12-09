@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 from cryptonalysis.config import load_cryptonalysis_config, CryptonalysisConfig
+from cryptonalysis.ml_core.transaction_builders import CryptoPredictor
 from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from cryptonalysis.utils.misc_utils import parse_date
 from market import market
@@ -24,7 +25,7 @@ def split_dataset(df):
     Split the DataFrame into an attribute vector X and a target vector y.
     :param df: The DataFrame to split
     :type df: DataFrame
-    :return: a tuple of attribute and target vectors (X, y)
+    :return a tuple of attribute and target vectors (X, y)
     :rtype: (DataFrame, DataFrame)
     """
     X = df.iloc[:, :-1]
@@ -33,11 +34,25 @@ def split_dataset(df):
     return X, y
 
 
-def run_prediction_simulation(cryptonalysis_config):
+def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler_dir=None, model_dir=None, models=None):
     """
     Run a prediction simulation with unseen data.
     :param cryptonalysis_config
     :type cryptonalysis_config: CryptonalysisConfig
+    :param master_data_dir: (Default None) The (overridden) directory where the master data is located. If None, the
+    default `MASTER_DATA_DIR` is used.
+    :type master_data_dir: str
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler is located. If None, the default
+    `SCALER_DIR` is used.
+    :type scaler_dir: str
+    :param model_dir: (Default None) The (overridden) directory where the trained models are located. If None, the
+    default `MODEL_DIR` is used.
+    :type model_dir: str
+    :param models: (Default None) A dictionary with the trained classifiers to use for prediction. If None, the models
+    will be loaded from the models directory.
+    :type models: dict
+    :return The resulting CryptoPredictor instance after running the simulation
+    :rtype: CryptoPredictor
     """
     logger.info("Running prediction simulation...")
     logger.info("Preprocessing config:\n" + str(cryptonalysis_config.preprocessing))
@@ -45,12 +60,13 @@ def run_prediction_simulation(cryptonalysis_config):
     # Preprocessing for ground-truth transactions
     logger.info("Crypto: {}".format(cryptonalysis_config.crypto))
     try:
-        data_file = os.path.join(MASTER_DATA_DIR, "new_{}.csv".format(CRYPTOCURRENCIES[cryptonalysis_config.crypto]))
+        master_data_dir_to_use = master_data_dir or MASTER_DATA_DIR
+        data_file = os.path.join(master_data_dir_to_use, "new_{}.csv".format(CRYPTOCURRENCIES[cryptonalysis_config.crypto]))
         df = get_historical_df(data_file)
 
         # Preprocess the data
         preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
-                                                 predicting=True)
+                                                 predicting=True, scaler_dir=scaler_dir)
     except Exception as e:
         logger.error("Error in preprocessing for prediction!")
         logger.error(e.message)
@@ -62,10 +78,14 @@ def run_prediction_simulation(cryptonalysis_config):
         # Split dataset for classification
         X, y = split_dataset(preprocessed_data)
 
-        svc_model = load_model('SVC', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
-                               cryptonalysis_config.training)
-        mlp_model = load_model('MLPClassifier', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
-                               cryptonalysis_config.training)
+        if models:
+            svc_model = models['SVC']['classifier']
+            mlp_model = models['MLPClassifier']['classifier']
+        else:
+            svc_model = load_model('SVC', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+                                   cryptonalysis_config.training, model_dir=model_dir)
+            mlp_model = load_model('MLPClassifier', cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
+                                   cryptonalysis_config.training, model_dir=model_dir)
 
         # Evaluation dataset
         logger.info("Evaluation results for SVC model:")
@@ -104,6 +124,8 @@ def run_prediction_simulation(cryptonalysis_config):
         predictor.run_transaction_simulation(y_pred_mlp.tolist())
 
         logger.info("Prediction simulation complete!\n")
+        
+        return predictor
     except Exception as e:
         logger.error("Error in prediction simulation!")
         logger.error(e.message)
@@ -129,7 +151,7 @@ def predict_for_date(crypto_name, preprocessing_config, training_config, for_dat
     :param model_dir: (Default None) The (overridden) directory where the model should be loaded from.
     If None, the default `MODELS_DIR` is used.
     :type model_dir: str
-    :return: A dictionary of predictions per classification type. For example:
+    :return A dictionary of predictions per classification type. For example:
     {
         SVC: BUY,
         MLPClassifier: SELL

@@ -144,7 +144,7 @@ class TestTrainingFunctions(unittest.TestCase):
         grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
             get_optimized_classifier(mlp, self.mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
         self.assertAlmostEquals(mlp_training_acc, 0.71429, 5)
-        self.assertEqual(mlp_eval_acc, 0.125)
+        self.assertEqual(mlp_eval_acc, 0.5)
 
     def test_save_and_load_model(self):
         # Split dataset for classification

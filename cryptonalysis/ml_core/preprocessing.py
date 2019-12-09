@@ -473,10 +473,10 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     :type master_data_dir: str
     :param preprocessed_data_dir: (Default None) The (overridden) directory where the preprocessed data is located. If
     None, the default `PREPROCESSED_DATA_DIR` is used.
-    :type master_data_dir: str
+    :type preprocessed_data_dir: str
     :param scaler_dir: (Default None) The (overridden) directory where the scaler is located. If None, the default
     `SCALER_DIR` is used.
-    :type master_data_dir: str
+    :type scaler_dir: str
     :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
     :rtype: DataFrame
     """

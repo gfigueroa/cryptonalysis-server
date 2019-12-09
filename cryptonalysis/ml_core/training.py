@@ -322,12 +322,12 @@ def run_training_pipeline(preprocessed_df, training_config):
     logger.info("Classification pipeline complete!\n")
 
     trained_classifiers = {
-        'svc': {
+        'SVC': {
             'classifier': grid_search_cv_svc,
             'training_acc': svc_training_acc,
             'eval_acc': svc_eval_acc
         },
-        'mlp': {
+        'MLPClassifier': {
             'classifier': grid_search_cv_mlp,
             'training_acc': mlp_training_acc,
             'eval_acc': mlp_eval_acc
