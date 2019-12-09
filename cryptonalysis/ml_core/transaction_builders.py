@@ -2,6 +2,9 @@ import logging
 import os
 import random
 from abc import ABCMeta, abstractmethod
+from datetime import date
+from market import MarketParameters
+from pandas import Series
 
 # Logging
 logger = logging.getLogger()
@@ -15,6 +18,21 @@ TRANSACTION_TYPE = {
 
 
 def get_transaction_type(transaction_value):
+    """
+    Get a transaction type as a string (e.g. BUY, SELL, UNKNOWN) given a transaction value using the TRANSACTION_TYPE
+    constant dictionary.
+
+    >>> get_transaction_type(0)
+    'SELL'
+    >>> get_transaction_type(1)
+    'BUY'
+    >>> get_transaction_type(-1)
+    'UNKNOWN'
+
+    :param transaction_value
+    :type transaction_value: int
+    :return:
+    """
     for transaction, value in TRANSACTION_TYPE.items():
         if transaction_value == value:
             return transaction
@@ -39,36 +57,52 @@ class CryptoPredictor(object):
     PROB_BUY = 1
     PROB_SELL = 1
 
-    def __init__(self, market, price_list, window_size, crypto_name, starting_date=None, ending_date=None,
+    def __init__(self, market, price_list, window_size, crypto_name, starting_date, ending_date,
                  starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None):
         """
         CryptoPredictor constructor.
         :param market: An instance of global market parameters
+        :type market: MarketParameters
         :param price_list: The list of all crypto prices to use for making transactions from the starting date
+        :type price_list: Series
         :param window_size: The window size to use for making transactions
+        :type window_size: int
         :param crypto_name: The cryptocurrency 3-character code (e.g., BTC, ETH, etc.)
+        :type crypto_name: str
         :param starting_date: The date from which to start making transactions
-        :param ending_date: The date in which to stop making transactions (default is today)
+        :type starting_date: date
+        :param ending_date: The date in which to stop making transactions
+        :type ending_date: date
         :param starting_investment: The starting investment in fiat
+        :type starting_investment: float
         :param daily_allowance: The daily amount of money (in fiat) that can be invested in making transactions
+        :type daily_allowance: float
         :param lookahead_days: The number of days to look ahead when making a transaction
+        :type lookahead_days: int
         :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
         when it actually has to buy. This parameter is useful when estimating the ROI of a predictor knowing a model's
         accuracy.
+        :type prob_buy: float
         :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
         when it actually has to sell. This parameter is useful when estimating the ROI of a predictor knowing a model's
         accuracy.
+        :type prob_sell: float
         """
 
-        # Initial conditions
+        # Initialize state variables
         self.total_investment = 0
         self.cash = 0
         self.owned_crypto = 0
         self.transactions = []
 
         self.market = market
-        self._starting_date = starting_date or price_list.index[0].date()  # First date in DataFrame
-        self.ending_date = ending_date or price_list.index[-1].date()  # Last date in DataFrame
+        self._starting_date = starting_date
+        self.ending_date = ending_date
+        if self._starting_date >= self.ending_date or not self._starting_date or not self.ending_date:
+            raise ValueError("Starting date {} must be before ending date {} and they both must be provided!".format(
+                self._starting_date, self.ending_date))
+        if window_size < 1:
+            raise ValueError("Window size must be greater than 0.")
         self._window_size = window_size
         self._crypto_name = crypto_name
 
@@ -79,6 +113,10 @@ class CryptoPredictor(object):
         self.starting_investment = starting_investment or CryptoPredictor.STARTING_INVESTMENT
         self.daily_allowance = daily_allowance or CryptoPredictor.DAILY_ALLOWANCE
         self.lookahead_days = lookahead_days or CryptoPredictor.LOOKAHEAD_DAYS
+        if self.lookahead_days < 1:
+            raise ValueError("Lookahead days must be greater than 0.")
+        if self._window_size + self.lookahead_days > len(self._price_list):
+            raise ValueError("The Window size plus the Lookahead days cannot exceed the length of the price list.")
 
         # Probabilities (prediction accuracy)
         self.prob_buy = prob_buy or CryptoPredictor.PROB_BUY
@@ -88,6 +126,16 @@ class CryptoPredictor(object):
         self.prob_sell = prob_sell or CryptoPredictor.PROB_SELL
         if self.prob_sell < 0 or self.prob_sell > 1:
             raise ValueError("prob_sell should be a decimal between 0 (inclusive) and 1 (inclusive).")
+
+    def reset_predictor_state(self):
+        """
+        Reset the CryptoPredictor's state variables.
+        """
+
+        self.total_investment = self.starting_investment
+        self.cash = self.starting_investment
+        self.owned_crypto = 0
+        self.transactions = []
 
     def get_transaction_tuple(self, prices, current_price, future_prices):
         """
@@ -150,9 +198,13 @@ class CryptoPredictor(object):
         :return The max crypto amount (e.g. ETH) currently allowed on a transaction
         """
         if buy:
-            crypto_amount = (self.cash / current_price) - (self.cash / current_price) * self.market.transaction_fee_perc
+            # crypto_amount = \
+            #     (self.cash / current_price) - ((self.cash / current_price) * self.market.transaction_fee_perc)
+            # Revised formula to account for all the cash available
+            crypto_amount = self.cash / (current_price + (current_price * self.market.transaction_fee_perc))
         else:
-            crypto_amount = self.owned_crypto - self.owned_crypto * self.market.transaction_fee_perc
+            # crypto_amount = self.owned_crypto - (self.owned_crypto * self.market.transaction_fee_perc)
+            crypto_amount = self.owned_crypto  # All of it
 
         return crypto_amount
 
@@ -217,7 +269,7 @@ class CryptoPredictor(object):
             fiat_amount = self.get_transaction_fiat_amount(True, crypto_amount, current_price)
             self.cash -= fiat_amount
             self.owned_crypto += crypto_amount
-            assert self.cash >= 0
+            assert round(self.cash, 4) >= 0
         else:
             fiat_amount = self.get_transaction_fiat_amount(False, crypto_amount, current_price)
             self.cash += fiat_amount
@@ -237,11 +289,7 @@ class CryptoPredictor(object):
         Example: [{[price1, price2, price3, ...], transaction: 'BUY'}, ...]
         """
 
-        # Initial conditions
-        self.total_investment = self.starting_investment
-        self.cash = self.starting_investment
-        self.owned_crypto = 0
-        self.transactions = []
+        self.reset_predictor_state()
 
         # Start trading
         logger.info("Running predictor for {0}...".format(self.__class__.__name__))
@@ -294,14 +342,13 @@ class CryptoPredictor(object):
     def run_transaction_simulation(self, transactions):
         """
         Run a transaction simulation given a list of transactions to perform per day.
-        :param transactions: a list of transactions (as ints) to perform on the given daily prices.
-        :type transactions: list of int
+        :param transactions: a list of transactions (as ints or as strings) to perform on the given daily prices.
+        :type transactions: list of int or list of str
         """
 
-        # Initial conditions
-        self.total_investment = self.starting_investment
-        self.cash = self.starting_investment
-        self.owned_crypto = 0
+        self.reset_predictor_state()
+
+        logger.info("Start date: {0}".format(self._starting_date))
 
         # Start trading
         logger.info("Running transaction simulation...")
@@ -309,21 +356,34 @@ class CryptoPredictor(object):
             self.starting_investment, self.daily_allowance))
 
         # First crypto purchase
-        day = 0
-        current_price = self._price_list[day]
+        current_price = float(self._price_list[self._window_size - 1])
         self.perform_transaction(True, self.get_max_crypto_transaction(True, current_price), current_price)
 
-        for price, transaction in zip(self._price_list, transactions):
-            logger.debug("Day {0} - {1}".format(day, self._price_list.index[day]))
+        day = 0
+        stop_day = 0
+        for start_day in range(len(self._price_list) - self._window_size - (self.lookahead_days - 1)):
+            if day >= len(transactions):
+                break
 
-            crypto_amount, fiat_amount = self.buy(price) \
-                if get_transaction_type(transaction) == 'BUY' else self.sell(price)
+            stop_day = start_day + self._window_size
+            logger.debug("Day {0} - {1}".format(day + 1, self._price_list.index[stop_day]))
+            current_price = float(self._price_list[stop_day - 1])
+            t = transactions[day]
+            if type(t) is int:
+                transaction = get_transaction_type(t)
+            elif type(t) is str:
+                transaction = t
+            else:
+                raise TypeError('List of transactions should be either ints or strings.')
+
+            crypto_amount, fiat_amount = self.buy(current_price) \
+                if transaction == 'BUY' else self.sell(current_price)
             # Ignore for transactions less than or close to a minimum crypto/fiat transaction
             if crypto_amount < self.market.min_transaction_size_crypto or \
                     round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
                 crypto_amount = 0
 
-            self.perform_transaction(get_transaction_type(transaction) == 'BUY', crypto_amount, price)
+            self.perform_transaction(transaction == 'BUY', crypto_amount, current_price)
 
             # End of the day allowance
             self.cash += self.daily_allowance
@@ -332,7 +392,7 @@ class CryptoPredictor(object):
             day += 1
 
         logger.info("Finished running transaction simulation")
-        logger.info("End date: {0}".format(self._price_list.index[-1]))
+        logger.info("End date: {0}".format(self._price_list.index[stop_day]))
         self._sell_all_crypto(current_price, False)  # Sell everything
 
     def _sell_all_crypto(self, current_price, save_roi):
@@ -347,9 +407,7 @@ class CryptoPredictor(object):
         logger.info("Cash: ${0}".format(round(self.cash, 2)))
         logger.info("Owned crypto: {0} {1}".format(self._crypto_name, round(self.owned_crypto, 4)))
 
-        self.cash += (self.owned_crypto * current_price) - (
-                    self.owned_crypto * current_price * self.market.transaction_fee_perc)
-        self.owned_crypto = 0
+        self.perform_transaction(False, self.get_max_crypto_transaction(False, current_price), current_price)
 
         logger.info("*** After selling all crypto ***")
         logger.info("Cash: ${0}".format(round(self.cash, 2)))
@@ -437,7 +495,7 @@ class BiffPredictorSmart(CryptoPredictor):
         """
 
         # Strategy 1
-        avg_future_price = sum(future_prices) / len(future_prices)
+        avg_future_price = sum(future_prices) / float(len(future_prices))
 
         # Strategy 2
         future_prices = list(future_prices)
@@ -447,7 +505,7 @@ class BiffPredictorSmart(CryptoPredictor):
             price_differences.append(future_prices[i + 1] - future_prices[i])
         s = sum(price_differences)
 
-        if current_price <= avg_future_price:
+        if avg_future_price > current_price:
             return 'BUY'
         else:
             return 'SELL'

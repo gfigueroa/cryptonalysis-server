@@ -2,17 +2,19 @@ import logging
 import os
 import pandas as pd
 import sys
-from config import load_cryptonalysis_config_grid, PreprocessingConfig, CryptonalysisConfigGrid
+from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingConfig, CryptonalysisConfigGrid
+from joblib import dump, load
 from market import market
-from pandas import DataFrame, to_datetime
-from sklearn.preprocessing import StandardScaler
+from pandas import DataFrame, Series
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from transaction_builders import TRANSACTION_TYPE
 
 # Logging
 logger = logging.getLogger()
 
 # Constants
-MASTER_DATA_DIR = os.path.join(os.path.pardir, 'master_data')
+MASTER_DATA_DIR = os.path.join('cryptonalysis', 'data', 'master_data')
+PREPROCESSED_DATA_DIR = os.path.join('cryptonalysis', 'data', 'preprocessed')
 CRYPTOCURRENCIES = {
     'ETH': "ethereum",
     'BTC': "bitcoin",
@@ -47,58 +49,25 @@ def get_historical_df(historical_file):
         df['Market Cap'] = pd.to_numeric(df['Market Cap'])
         df = df.fillna(0)
 
+    # Set index
+    df = df.set_index('Date').loc[:, 'Open':]
+
     return df
 
 
-def get_aggregated_dfs(historical_df):
-    """
-    Get time aggregated (daily, weekly, and monthly) DataFrames from historical DF.
-    :param historical_df: The historical DF to aggregate
-    :type historical_df: DataFrame
-    :return: a tuple of the form (DataFrame, DataFrame, DataFrame), containing a daily DF, weekly DF, and monthly DF,
-    respectively.
-    :rtype: (DataFrame, DataFrame, DataFrame)
-    """
-
-    logger.info("Aggregating data...")
-
-    df = historical_df.copy(deep=True)  # type: DataFrame
-    df.insert(1, 'Week', pd.PeriodIndex(df.Date, freq='W'))
-    df.insert(2, 'Month', pd.PeriodIndex(df.Date, freq='M'))
-
-    daily_df = df.set_index('Date').loc[:, 'Open':]
-    weekly_df = df.groupby(by=['Week']).mean()
-    monthly_df = df.groupby(by=['Month']).mean()
-
-    return daily_df, weekly_df, monthly_df
-
-
-def get_price_list(df, price_column, window_size=None, lookahead_days=None):
+def get_price_list(df, price_column):
     """
     Get a DataFrame with a single column of prices given a composite DataFrame and the name of the price column to
     consider.
-    There are two optional parameters `window_size` and `lookahead_days` to cut the price list accordingly.
     :param df: The original cryptocurrency DataFrame.
     :type df: DataFrame
     :param price_column: The name of the column containing the crypto price to consider.
     :type price_column: str
-    :param window_size: The window size to use for making transactions
-    :param lookahead_days: The number of days to look ahead when making a transaction
-    :return: A DataFrame containing a single column with cryptocurrency prices
-    :rtype: DataFrame
+    :return: A Series containing cryptocurrency prices
+    :rtype: Series
     """
-
-    # Get aggregated DFs
-    daily_df, weekly_df, monthly_df = get_aggregated_dfs(df)
-
     # Get transaction data
-    price_list = daily_df[price_column]
-
-    if window_size:
-        price_list = price_list[window_size - 1:]  # Remove first window_size prices
-    if lookahead_days:
-        price_list = price_list[:-lookahead_days]
-
+    price_list = df[price_column]
     return price_list
 
 
@@ -109,14 +78,13 @@ def build_transactions_df(transactions):
     [{'transaction': 'TRANSACTION_TYPE', 'prices': [price1, price2, ...]}, ...]
     :type transactions: list of dict
     :return: A DataFrame with N price columns and a transaction column (1=BUY, 0=SELL, -1=UNKNOWN)
-    :rtype: pd.DataFrame
+    :rtype: DataFrame
     """
 
     logger.info("Getting transactions DataFrame...")
 
-    prices = list(transactions[0]['prices'])
-
     # Price columns
+    prices = list(transactions[0]['prices'])  # Get first list of prices to obtain length
     df_columns = ["price {0}".format(column_name) for column_name in range(1, len(prices) + 1)]
     df_columns.append('transaction')
 
@@ -126,236 +94,288 @@ def build_transactions_df(transactions):
         transaction = TRANSACTION_TYPE[transactions[row]['transaction']]
         df.loc[row] = prices + [transaction]
 
+    date_index = [t['prices'].index[-1] for t in transactions]  # Use last date of each transaction
+    df.index = pd.DatetimeIndex(date_index)
     df['transaction'] = df['transaction'].astype(int)
 
     return df
 
 
-def normalize_df(df, by_row):
+def normalize_df(df, by_row, standardize=False):
     """
-    Normalize a DataFrame either by row using feature scaling (by_row=True), or using scikit-learn's by-column
-    StandardScaler (by_row=False).
-    A value is normalized in the row using the feature scaling formula to be in the range [0, 1]:
+    Normalize a DataFrame either by row (sample per sample) or by column (feature scaling). It can either use
+    standardization (StandardScaler) or min max normalization (MinMaxScaler).
+    Standardization uses the standard score of a sample:
+    x' = (x - u) / s, where u is the mean and s is the standard deviation
+    Normalization uses the min nax scaling formula to be in the range [0, 1]:
     x' = (x - x_min) / (x_max - x_min)
+    When normalizing by column, the scaler is also returned by the function, since the same scaler is required for
+    training, testing, and prediction. The scaler becomes useless after normalization when normalizing by row.
     :param df: The DataFrame to normalize
-    :param by_row: If True, normalizes by row using feature scaling, if False, uses scikit-learn's FeatureScaler, which
-    scales by column and using variance.
-    :return: A new DataFrame with each row normalized
+    :type df: DataFrame
+    :param by_row: If True, normalizes by row using, taking each sample independently, otherwise it normalizes by column
+    :type by_row: bool
+    :param standardize: Whether to use StandardScaler (if True) or MinMaxScaler (if False)
+    :type standardize: bool
+    :return: A tuple with the normalized Dataframe and the scaler (or None if by_row=True)
+    :rtype: (DataFrame, StandardScaler or MinMaxScaler or None)
     """
 
     logger.info("Normalizing data...")
 
-    if by_row:
-        norm_df = df.copy(deep=True)
-        for row in range(len(df)):
-            norm_df.iloc[row, :-1] = (df.iloc[row, :-1] - df.iloc[row, :-1].min()) / \
-                                     (df.iloc[row, :-1].max() - df.iloc[row, :-1].min())
-    else:
+    if standardize:
         scaler = StandardScaler()
-        scaler.fit(df.iloc[:, :-1])
-        norm_df = DataFrame(scaler.transform(df.iloc[:, :-1]))
-        norm_df['transaction'] = df['transaction']
+    else:
+        scaler = MinMaxScaler()
+
+    norm_df = df.copy(deep=True)  # type: DataFrame
+    only_data = norm_df.iloc[:, :-1]
+    if by_row:
+        scaler = scaler.fit(only_data.transpose())
+        norm_df.iloc[:, :-1] = scaler.transform(only_data.transpose()).transpose()
+    else:
+        scaler = scaler.fit(only_data)
+        norm_df.iloc[:, :-1] = scaler.transform(only_data)
+
+    # Return scaler only if not by_row
+    if by_row:
+        scaler = None
+
+    return norm_df, scaler
+
+
+def normalize_df_with_scaler(df, scaler):
+    """
+    Normalize a DataFrame by column using a given fitted scaler (e.g. MinMaxScaler, StandardScaler). This method is to
+    be called in data for testing, simulations and predictions. The scaler must previously have been fitted with
+    training data, or a ValueError is raised.
+    :param df: The DataFrame to normalize
+    :type df: DataFrame
+    :param scaler: A fitted scaler instance
+    :type scaler: StandardScaler or MinMaxScaler
+    :return: The normalized DataFrame
+    :rtype: DataFrame
+    """
+
+    logger.info("Normalizing data...")
+    if not hasattr(scaler, 'n_samples_seen_') or scaler.n_samples_seen_ < 1:
+        raise ValueError("Scaler has not been fitted with training data!")
+
+    norm_df = df.copy(deep=True)  # type: DataFrame
+    norm_df.iloc[:, :-1] = scaler.transform(norm_df.iloc[:, :-1])
 
     return norm_df
 
 
-def get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
-                      normalize_by_row, prob_buy, prob_sell):
+def normalize_df_with_scaler_params(df, crypto_name, preprocessing_config, scaler_dir=None):
+    """
+    Normalize a DataFrame by column using a given the preprocessing parameters of a previously saved and fitted scaler.
+    :param df: The DataFrame to normalize
+    :type df: DataFrame
+    :param crypto_name
+    :type crypto_name: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler is saved. If None, the default
+    `PREPROCESSED_DATA_DIR` is used.
+    :type scaler_dir: str
+    :return: The normalized DataFrame
+    :rtype: DataFrame
+    """
+    scaler = load_scaler(crypto_name, preprocessing_config, scaler_dir)
+    return normalize_df_with_scaler(df, scaler)
+
+
+def get_data_filename(crypto_name, preprocessing_config):
     """
     Get the path and filename used for the data file containing the preprocessed data based on the preprocessing
     parameters.
-    An example value returned would be '../data/pre_ETH_ProbabilityPredictor_2018-01-01-2018-07-10_win30_norm_col'.
-    An example filename would be 'pre_ProbabilityPredictor_2018-01-01-2018-07-10_win30_norm_col.csv', meaning the data
-    was obtained using the ProbabilityPredictor, using historical data from 2018-01-01 to 2018-07-10, a window size of
-    30, and normalization by column.
+
+    >>> get_data_filename('ETH',
+    ...     PreprocessingConfig(
+    ...     {
+    ...         'window_size': 60,
+    ...         'predictor_params': {
+    ...             'lookahead_days': 3, 'prob_buy': 1, 'prob_sell': 1, 'starting_investment': 100, 'daily_allowance': 5
+    ...         },
+    ...         'start_date': '2018-01-01',
+    ...         'end_date': '2019-05-04',
+    ...         'price_column': 'Close',
+    ...         'normalize': True,
+    ...         'normalize_by_row': True,
+    ...         'standardize': False,
+    ...         'predictor_cls': 'BiffPredictor',
+    ...     })
+    ... )
+    'pre_ETH_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160.csv'
+
     :param crypto_name
     :type crypto_name: str
-    :param predictor_class: The class used to build transactions (default is BiffPredictor)
-    :type predictor_class: type
-    :param lookahead_days: The number of lookahead days used by the predictor_class
-    :param starting_date: The date from which the data pipeline began (inclusive)
-    :param ending_date: The date in which the data pipeline ended
-    :param window_size: The size of the price window (in days) used in the transaction prediction
-    :param normalize: Whether or not the data was normalized
-    :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
-    (default is False)
-    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
-    when it actually has to buy.
-    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
-    when it actually has to sell.
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :return A string with the name of a preprocessed data file given a series of config parameters
+    :rtype: str
     """
-    norm_string = '_norm_{0}'.format('row' if normalize_by_row else 'col') if normalize else ''
-    filename = 'pre_{0}_{1}({2})_{3}-{4}_win{5}{6}_b{7}s{8}.csv'.format(crypto_name, predictor_class.__name__,
-                                                                        lookahead_days, starting_date, ending_date,
-                                                                        window_size, norm_string, prob_buy, prob_sell)
-    file_path = os.path.join(MASTER_DATA_DIR, filename)
-    return file_path
+    filename = 'pre_{}_{}.csv'.format(crypto_name, preprocessing_config.to_single_line_str())
+    return filename
 
 
-def load_data_file(crypto_name, predictor_class, lookahead_days, starting_date, ending_date, window_size, normalize,
-                   normalize_by_row, prob_buy, prob_sell):
+def load_preprocessed_data(crypto_name, preprocessing_config, preprocessed_data_dir=None):
     """
     Load the DataFrame (if saved) as a CSV containing data ready for the classification task.
     :param crypto_name
     :type crypto_name: str
-    :param predictor_class: The class used to build transactions (default is BiffPredictor)
-    :type predictor_class: type
-    :param lookahead_days: The number of lookahead days used by the predictor_class
-    :param starting_date: The date from which the data pipeline began (inclusive)
-    :param ending_date: The date in which the data pipeline ended
-    :param window_size: The size of the price window (in days) used in the transaction prediction
-    :param normalize: Whether or not the data was normalized
-    :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
-    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
-    when it actually has to buy.
-    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
-    when it actually has to sell.
-    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
-    when it actually has to buy.
-    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
-    when it actually has to sell.
-    :return:
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param preprocessed_data_dir: (Default None) The (overridden) directory where the preprocessed data is located. If
+    None, the default `PREPROCESSED_DATA_DIR` is used.
+    :type preprocessed_data_dir: str
+    :return: a DataFrame
+    :rtype: DataFrame
     """
-    preprocessed_data_filename = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date,
-                                                   ending_date, window_size, normalize, normalize_by_row, prob_buy,
-                                                   prob_sell)
-    if os.path.isfile(preprocessed_data_filename):
+    data_filename = get_data_filename(crypto_name, preprocessing_config)
+    dir_to_use = PREPROCESSED_DATA_DIR if preprocessed_data_dir is None else preprocessed_data_dir
+    data_file_path = os.path.join(dir_to_use, data_filename)
+    if os.path.isfile(data_file_path):
         logger.info("Preprocessed datafile '{0}'' already exists. "
-                    "Loading file and skipping preprocessing pipeline...".format(preprocessed_data_filename))
-        transactions_df = pd.read_csv(preprocessed_data_filename)
+                    "Loading file and skipping preprocessing pipeline...".format(data_file_path))
+        transactions_df = pd.read_csv(data_file_path, index_col='date')
+        transactions_df.index = pd.to_datetime(transactions_df.index)
         return transactions_df
     else:
         return None
 
 
-def save_data_file(transactions_df, crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                   window_size, normalize, normalize_by_row, prob_buy, prob_sell):
+def save_preprocessed_data(transactions_df, crypto_name, preprocessing_config, preprocessed_data_dir=None):
     """
     Save the DataFrame containing data ready for the classification task as a CSV file.
-    :param crypto_name
-    :type crypto_name: str
     :param transactions_df: The DataFrame containing the actual preprocessed data
-    :param predictor_class: The class used to build transactions (default is BiffPredictor)
-    :type predictor_class: type
-    :param lookahead_days: The number of lookahead days used by the predictor_class
-    :param starting_date: The date from which the data pipeline began (inclusive)
-    :param ending_date: The date in which the data pipeline ended
-    :param window_size: The size of the price window (in days) used in the transaction prediction
-    :param normalize: Whether or not the data was normalized
-    :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
-    (default is False)
-    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
-    when it actually has to buy.
-    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
-    when it actually has to sell.
-    """
-
-    data_file_path = get_data_filename(crypto_name, predictor_class, lookahead_days, starting_date, ending_date,
-                                       window_size, normalize, normalize_by_row, prob_buy, prob_sell)
-    logger.info("Saving data to file '{0}'".format(data_file_path))
-    transactions_df.to_csv(data_file_path, index=False)
-
-
-def preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_size, normalize, normalize_by_row,
-                         starting_date=None, ending_date=None, starting_investment=None, daily_allowance=None,
-                         lookahead_days=None, prob_buy=None, prob_sell=None, save_roi=None, run_predictor=True):
-    """
-    Preprocess a dataframe containing cryptocurrency information and have it ready for classification.
-    The preprocessing, by default, runs a `CryptoPredictor`, which is necessary for training and testing models.
-    This step can be skipped when only daily prediction is required.
-    :param df: The DataFrame containing the unprocessed cryptocurrency data
-    :type df: pd.DataFrame
     :param crypto_name
     :type crypto_name: str
-    :param predictor_cls: The class used to build transactions (default is BiffPredictor)
-    :type predictor_cls: type
-    :param price_column: The name of the column containing the price to use for training.
-    :type price_column: str
-    :param window_size: The size of the price window (in days) used in the transaction prediction
-    :type window_size: int
-    :param normalize: Whether or not the data was normalized
-    :type normalize: bool
-    :param normalize_by_row: Whether or not the data was normalized by row or column (ignored if normalize=False)
-    (default is False)
-    :type normalize_by_row: bool
-    :param starting_date: The date from which the data pipeline began (inclusive)
-    :param ending_date: The date in which the data pipeline ended
-    :param starting_investment
-    :param daily_allowance
-    :param lookahead_days: The number of lookahead days used by the predictor_class
-    :param prob_buy: A value between 0 and 1 which indicates the probability that the transaction will be 'BUY'
-    when it actually has to buy.
-    :param prob_sell: A value between 0 and 1 which indicates the probability that the transaction will be 'SELL'
-    when it actually has to sell.
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param preprocessed_data_dir: (Default None) The (overridden) directory where the preprocessed data should be saved.
+    If None, the default `PREPROCESSED_DATA_DIR` is used.
+    :type preprocessed_data_dir: str
+    """
+
+    dir_to_use = PREPROCESSED_DATA_DIR if preprocessed_data_dir is None else preprocessed_data_dir
+    if dir_to_use == PREPROCESSED_DATA_DIR and not os.path.exists(PREPROCESSED_DATA_DIR):
+        os.makedirs(PREPROCESSED_DATA_DIR)
+
+    data_filename = get_data_filename(crypto_name, preprocessing_config)
+    data_file_path = os.path.join(dir_to_use, data_filename)
+
+    logger.info("Saving data to file '{0}'".format(data_file_path))
+    transactions_df.to_csv(data_file_path, index=True, index_label='date')
+
+
+def save_scaler(scaler, crypto_name, preprocessing_config, scaler_dir=None):
+    """
+    Save a scaler obtained from normalizing/standardazing data in the preprocessing stage. This scaler can later be used
+    for prediction.
+    Normally, only column-based normalization/standardization will have use for a scaler.
+    :param scaler: A fitted scaler instance
+    :type scaler: StandardScaler or MinMaxScaler
+    :param crypto_name
+    :type crypto_name: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler should be saved. If None, the default
+    `PREPROCESSED_DATA_DIR` is used.
+    :type scaler_dir: str
+    """
+
+    if not preprocessing_config.normalize or preprocessing_config.normalize_by_row:
+        raise ValueError("A scaler should not be defined for non-normalized/non-standardized data or data that has "
+                         "been normalize/standardized by row.")
+
+    dir_to_use = PREPROCESSED_DATA_DIR if scaler_dir is None else scaler_dir
+
+    if dir_to_use == PREPROCESSED_DATA_DIR and not os.path.exists(PREPROCESSED_DATA_DIR):
+        os.makedirs(PREPROCESSED_DATA_DIR)
+
+    scaler_filename = get_data_filename(crypto_name, preprocessing_config)
+    scaler_filename = scaler_filename.replace('pre_', 'scaler_')
+    scaler_filename = scaler_filename.replace('.csv', '.joblib')
+    scaler_file_path = os.path.join(dir_to_use, scaler_filename)
+    logger.info("Saving scaler to file '{0}'".format(scaler_file_path))
+    dump(scaler, scaler_file_path)
+
+
+def load_scaler(crypto_name, preprocessing_config, scaler_dir=None):
+    """
+    Load a scaler obtained from normalizing/standardizing data in the preprocessing stage. This scaler can be used for
+    prediction.
+    Normally, only column-based normalization/standardization will have use for a scaler.
+    :param crypto_name
+    :type crypto_name: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler is saved. If None, the default
+    `PREPROCESSED_DATA_DIR` is used.
+    :type scaler_dir: str
+    :return a fitted scaler
+    :rtype: StandardScaler or MinMaxScaler
+    """
+
+    if not preprocessing_config.normalize or preprocessing_config.normalize_by_row:
+        raise ValueError("A scaler should not be defined for non-normalized/non-standardized data or data that has "
+                         "been normalize/standardized by row.")
+
+    dir_to_use = PREPROCESSED_DATA_DIR if scaler_dir is None else scaler_dir
+
+    if dir_to_use == PREPROCESSED_DATA_DIR and not os.path.exists(PREPROCESSED_DATA_DIR):
+        os.makedirs(PREPROCESSED_DATA_DIR)
+
+    scaler_filename = get_data_filename(crypto_name, preprocessing_config)
+    scaler_filename = scaler_filename.replace('pre_', 'scaler_')
+    scaler_filename = scaler_filename.replace('.csv', '.joblib')
+    scaler_file_path = os.path.join(dir_to_use, scaler_filename)
+    logger.info("Loading scaler from file '{0}'".format(scaler_file_path))
+
+    try:
+        scaler = load(scaler_file_path)
+    except IOError:
+        raise ValueError("Scaler with path '{}' not found!".format(scaler_file_path))
+
+    return scaler
+
+
+def preprocess_dataframe(df, crypto_name, preprocessing_config, save_roi=False, predicting=False, scaler_dir=None):
+    """
+    Preprocess a dataframe containing cryptocurrency information and have it ready for training/testing.
+    The preprocessing runs a `CryptoPredictor`, which is necessary for training and testing models.
+    :param df: The DataFrame containing the unprocessed cryptocurrency data
+    :type df: DataFrame
+    :param crypto_name
+    :type crypto_name: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
     :param save_roi: Whether or not to save the ROI of this predictor run in a file
     :type save_roi: bool
-    :param run_predictor: Whether or not to run the `CryptoPredictor` specified in the `predictor_cls` parameter.
-    :type run_predictor: bool
-    :return: A preprocessing DataFrame containing daily transactions in the last column.
-    :rtype: pd.DataFrame
-    """
-
-    price_list = get_price_list(df, price_column)
-
-    # Run transaction builder
-    if run_predictor:
-        predictor = predictor_cls(market, price_list, window_size, crypto_name, starting_date, ending_date,
-                                  starting_investment=starting_investment, daily_allowance=daily_allowance,
-                                  lookahead_days=lookahead_days, prob_buy=prob_buy, prob_sell=prob_sell)
-        predictor.run_predictor(save_roi)
-
-        # Get transactions DataFrame
-        transactions_df = build_transactions_df(predictor.transactions)
-
-        logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['BUY']])))
-        logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['SELL']])))
-    else:  # Pure prediction (unknown target)
-        transactions = [{'transaction': 'UNKNOWN', 'prices': price_list[-window_size:]}]  # Ensure window size
-        transactions_df = build_transactions_df(transactions)
-
-    # Data normalization
-    # TODO: Normalization should be part of training stage and column-based normalization should be stored with model
-    if normalize:
-        transactions_df = normalize_df(transactions_df, normalize_by_row)
-
-    return transactions_df
-
-
-def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, save_roi):
-    """
-    Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for the classification
-    task.
-    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
-    :type crypto_name: str
-    :param preprocessing_config: The preprocessing configuration object
-    :type preprocessing_config: PreprocessingConfig
-    :param save_data: Whether or not to save preprocessed data to a local file to avoid recalculation
-    :type save_data: bool
-    :param save_roi: Whether or not to save the preprocessing ROI to a local file for analysis
-    :type save_roi: bool
-    :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
+    :param predicting: (Default False) Whether or not the preprocessing is being run for prediction (requires previously
+    fitted scaler if normalization/standardization by column).
+    :type predicting: bool
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler should be saved. If None, the default
+    `PREPROCESSED_DATA_DIR` is used.
+    :type scaler_dir: str
+    :return: The preprocessing DataFrame containing daily transactions in the last column.
     :rtype: DataFrame
     """
 
-    logger.info("Running preprocessing pipeline...")
-    logger.info("Preprocessing config:\n" + str(preprocessing_config))
+    price_column = preprocessing_config.price_column
+    price_list = get_price_list(df, price_column)
 
-    # Get DF
-    historical_file = os.path.join(MASTER_DATA_DIR, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
-    df = get_historical_df(historical_file)
-
-    # Adjust end_date to latest date in historical df
-    latest_date = to_datetime(df['Date'].iloc[-1]).date()
-    preprocessing_config.adjust_end_date(latest_date)
+    # Check if dates are outside price_list time range
+    preprocessing_config.adjust_dates(df.index)
 
     # Preprocessing parameters
     predictor_cls = preprocessing_config.predictor_cls
-    starting_date = preprocessing_config.start_date
-    ending_date = preprocessing_config.end_date
-    price_column = preprocessing_config.price_column
     window_size = preprocessing_config.window_size
     normalize = preprocessing_config.normalize
     normalize_by_row = preprocessing_config.normalize_by_row
+    standardize = preprocessing_config.standardize
 
     # Predictor parameters
     lookahead_days = preprocessing_config.predictor_params['lookahead_days']
@@ -364,22 +384,128 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
     prob_buy = preprocessing_config.predictor_params['prob_buy']
     prob_sell = preprocessing_config.predictor_params['prob_sell']
 
+    # Run transaction builder
+    predictor = predictor_cls(market, price_list, window_size, crypto_name, preprocessing_config.start_date,
+                              preprocessing_config.end_date, starting_investment=starting_investment,
+                              daily_allowance=daily_allowance, lookahead_days=lookahead_days,
+                              prob_buy=prob_buy, prob_sell=prob_sell)
+    predictor.run_predictor(save_roi)
+
+    # Get transactions DataFrame
+    transactions_df = build_transactions_df(predictor.transactions)
+
+    logger.info('Buy: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['BUY']])))
+    logger.info('Sell: {0}'.format(len(transactions_df[transactions_df['transaction'] == TRANSACTION_TYPE['SELL']])))
+
+    # Data normalization
+    # TODO: Normalization should be part of training stage
+    if normalize:
+        if not predicting:
+            transactions_df, scaler = normalize_df(transactions_df, normalize_by_row, standardize)
+            # Only save scaler if normalization/standardization is done by column
+            if not normalize_by_row:
+                save_scaler(scaler, crypto_name, preprocessing_config, scaler_dir)
+        else:  # For prediction simulations
+            if normalize_by_row:
+                transactions_df, _ = normalize_df(transactions_df, normalize_by_row, standardize)
+            else:
+                transactions_df = normalize_df_with_scaler_params(transactions_df, crypto_name, preprocessing_config,
+                                                                  scaler_dir)
+
+    return transactions_df
+
+
+def preprocess_data_point(df, crypto_name, preprocessing_config, scaler_dir=None):
+    """
+    Preprocess a data point containing cryptocurrency information for a single day and have it ready for prediction.
+    The preprocessing, if normalization/standardization by column set, normalizes/standardizes the data using a
+    previously fitted scaler (from the training/testing stages).
+    :param df: The DataFrame containing the unprocessed cryptocurrency data (single row)
+    :type df: DataFrame
+    :param crypto_name
+    :type crypto_name: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler should be loaded. If None, the default
+    `PREPROCESSED_DATA_DIR` is used.
+    :type scaler_dir: str
+    :return: The preprocessed DataFrame containing daily transaction in the last column.
+    :rtype: DataFrame
+    """
+
+    price_column = preprocessing_config.price_column
+    price_list = get_price_list(df, price_column)
+
+    # Preprocessing parameters
+    window_size = preprocessing_config.window_size
+    normalize = preprocessing_config.normalize
+    normalize_by_row = preprocessing_config.normalize_by_row
+    standardize = preprocessing_config.standardize
+
+    transactions = [{'transaction': 'UNKNOWN', 'prices': price_list[-window_size:]}]  # Ensure window size
+    transactions_df = build_transactions_df(transactions)
+
+    # Data normalization
+    if normalize:
+        if normalize_by_row:
+            transactions_df, _ = normalize_df(transactions_df, normalize_by_row, standardize)
+        else:
+            transactions_df = normalize_df_with_scaler_params(transactions_df, crypto_name, preprocessing_config,
+                                                              scaler_dir)
+
+    return transactions_df
+
+
+def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, save_roi, master_data_dir=None,
+                               preprocessed_data_dir=None, scaler_dir=None):
+    """
+    Run the data preprocessing pipeline. The function returns a DataFrame containing data ready for training.
+    :param crypto_name: The cryptocurrency name (e.g., ETH, BTC, etc.)
+    :type crypto_name: str
+    :param preprocessing_config: The preprocessing configuration object
+    :type preprocessing_config: PreprocessingConfig
+    :param save_data: Whether or not to save preprocessed data to a local file to avoid recalculation
+    :type save_data: bool
+    :param save_roi: Whether or not to save the preprocessing ROI to a local file for analysis
+    :type save_roi: bool
+    :param master_data_dir: (Default None) The (overridden) directory where the master data is located. If None, the
+    default `MASTER_DATA_DIR` is used.
+    :type master_data_dir: str
+    :param preprocessed_data_dir: (Default None) The (overridden) directory where the preprocessed data is located. If
+    None, the default `PREPROCESSED_DATA_DIR` is used.
+    :type preprocessed_data_dir: str
+    :param scaler_dir: (Default None) The (overridden) directory where the scaler is located. If None, the default
+    `SCALER_DIR` is used.
+    :type scaler_dir: str
+    :return: A DataFrame ready for classification, consisting of a set of attributes and a class label.
+    :rtype: DataFrame
+    """
+
+    logger.info("Running preprocessing pipeline...")
+    logger.info("Preprocessing config:\n" + str(preprocessing_config))
+
+    # Get DF
+    master_data_dir_to_use = master_data_dir or MASTER_DATA_DIR
+    historical_file = os.path.join(master_data_dir_to_use, "historical_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
+    df = get_historical_df(historical_file)
+
+    # Check if dates are outside price_list time range
+    preprocessing_config.adjust_dates(df.index)
+
     # Load preprocessed data file if it exists
     if save_data:
-        transactions_df = load_data_file(crypto_name, predictor_cls, lookahead_days, starting_date, ending_date,
-                                         window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+        transactions_df = load_preprocessed_data(crypto_name, preprocessing_config,
+                                                 preprocessed_data_dir=preprocessed_data_dir)
         if transactions_df is not None:
             return transactions_df
 
     # Preprocess the data
-    transactions_df = preprocess_dataframe(df, crypto_name, predictor_cls, price_column, window_size, normalize,
-                                           normalize_by_row, starting_date, ending_date, starting_investment,
-                                           daily_allowance, lookahead_days, prob_buy, prob_sell, save_roi)
+    transactions_df = preprocess_dataframe(df, crypto_name, preprocessing_config, save_roi, scaler_dir=scaler_dir)
 
     # Save data
     if save_data:
-        save_data_file(transactions_df, crypto_name, predictor_cls, lookahead_days, starting_date, ending_date,
-                       window_size, normalize, normalize_by_row, prob_buy, prob_sell)
+        save_preprocessed_data(transactions_df, crypto_name, preprocessing_config,
+                               preprocessed_data_dir=preprocessed_data_dir)
 
     logger.info("Preprocessing pipeline complete!\n")
 
@@ -420,7 +546,7 @@ if __name__ == '__main__':
     config_file = sys.argv[1]
 
     RUNS = 10  # Number of runs for ROI stats
-    config_path = os.path.join(os.path.pardir, os.path.join(os.path.pardir, 'config'))
+    config_path = 'config'
     config_grid = load_cryptonalysis_config_grid(config_path, config_file)
 
     run_preprocessing(config_grid, RUNS)

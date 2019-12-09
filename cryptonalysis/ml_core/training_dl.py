@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import os
 import sys
-from config import load_cryptonalysis_config_grid, TrainingConfig, DeepLearningConfig, CryptonalysisConfigGrid
+from cryptonalysis.config import load_cryptonalysis_config_grid, TrainingConfig, DeepLearningConfig, CryptonalysisConfigGrid
 from preprocessing import run_preprocessing_pipeline, CRYPTOCURRENCIES
 from training import split_datasets
 from keras.models import Sequential

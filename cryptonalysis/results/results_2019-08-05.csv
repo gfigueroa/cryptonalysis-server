@@ -1,7 +1,0 @@
-crypto,end_date,normalize,normalize_by_row,predictor_cls,predictor_params.daily_allowance,predictor_params.lookahead_days,predictor_params.prob_buy,predictor_params.prob_sell,predictor_params.starting_investment,price_column,start_date,window_size,cv_folds,dev_size,shuffle_data,training_size,mlp_training,mlp_eval,svc_training,svc_eval
-LTC,2019-05-04,True,False,BiffPredictor,5,4,1,1,100,Close,2016-01-01,60,4,0.5,True,0.7,0.557093425606,0.559585492228,0.614186851211,0.683937823834
-LTC,2019-05-04,True,False,BiffPredictor,5,4,1,1,100,Close,2017-01-01,60,4,0.5,True,0.7,0.693670886076,0.585858585859,0.716455696203,0.704545454545
-LTC,2019-05-04,True,False,BiffPredictor,5,4,1,1,100,Close,2018-01-01,60,4,0.5,True,0.7,0.708920187793,0.516431924883,0.69014084507,0.713615023474
-LTC,2019-05-04,True,False,BiffPredictorSmart,5,4,1,1,100,Close,2016-01-01,60,4,0.5,True,0.7,0.569204152249,0.540587219344,0.622837370242,0.644214162349
-LTC,2019-05-04,True,False,BiffPredictorSmart,5,4,1,1,100,Close,2017-01-01,60,4,0.5,True,0.7,0.60253164557,0.590909090909,0.673417721519,0.643939393939
-LTC,2019-05-04,True,False,BiffPredictorSmart,5,4,1,1,100,Close,2018-01-01,60,4,0.5,True,0.7,0.652582159624,0.549295774648,0.671361502347,0.671361502347
