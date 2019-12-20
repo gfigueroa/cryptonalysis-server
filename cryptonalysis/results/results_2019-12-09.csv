@@ -1,0 +1,9 @@
+crypto,end_date,normalize,normalize_by_row,predictor_cls,predictor_params.daily_allowance,predictor_params.lookahead_days,predictor_params.prob_buy,predictor_params.prob_sell,predictor_params.starting_investment,price_column,standardize,start_date,window_size,cv_folds,dev_size,shuffle_data,training_size,MLPClassifier_training,MLPClassifier_eval,SVC_training,SVC_eval
+ETH,2019-09-30,True,True,BiffPredictor,5,1,1,1,100,Close,True,2016-01-01,10,4,0.5,True,0.7,0.547864506627,0.538235294118,0.541973490427,0.522058823529
+ETH,2019-09-30,True,True,BiffPredictor,5,1,1,1,100,Close,True,2016-01-01,10,4,0.5,False,0.7,0.547864506627,0.511764705882,0.543446244477,0.508823529412
+ETH,2019-09-30,True,True,BiffPredictor,5,1,1,1,100,Close,True,2017-01-01,10,4,0.5,True,0.7,0.538306451613,0.521126760563,0.54435483871,0.48893360161
+ETH,2019-09-30,True,True,BiffPredictor,5,1,1,1,100,Close,True,2017-01-01,10,4,0.5,False,0.7,0.546370967742,0.494969818913,0.5625,0.498993963783
+ETH,2019-09-30,True,True,BiffPredictor,5,1,1,1,100,Close,True,2018-01-01,10,4,0.5,True,0.7,0.589171974522,0.442675159236,0.579617834395,0.46178343949
+ETH,2019-09-30,True,True,BiffPredictor,5,1,1,1,100,Close,True,2018-01-01,10,4,0.5,False,0.7,0.570063694268,0.484076433121,0.554140127389,0.484076433121
+ETH,2019-09-30,True,True,BiffPredictorSmart,5,1,1,1,100,Close,True,2016-01-01,10,4,0.5,True,0.7,0.543446244477,0.501470588235,0.531664212077,0.527941176471
+ETH,2019-09-30,True,True,BiffPredictorSmart,5,1,1,1,100,Close,True,2016-01-01,10,4,0.5,False,0.7,0.553755522828,0.510294117647,0.543446244477,0.508823529412

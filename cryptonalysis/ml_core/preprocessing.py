@@ -20,7 +20,7 @@ CRYPTOCURRENCIES = {
     'BTC': "bitcoin",
     'XRP': "ripple",
     'LTC': "litecoin",
-    'USDT': "tether"
+    # 'USDT': "tether"
 }
 RUNS = 1
 
@@ -547,11 +547,11 @@ if __name__ == '__main__':
     config_file = sys.argv[1]
 
     if len(sys.argv) > 2:
-        runs = int(sys.argv[2])
+        preprocessing_runs = int(sys.argv[2])
     else:
-        runs = RUNS
+        preprocessing_runs = RUNS
 
     config_path = 'config'
     config_grid = load_cryptonalysis_config_grid(config_path, config_file)
 
-    run_preprocessing(config_grid, runs)
+    run_preprocessing(config_grid, preprocessing_runs)
