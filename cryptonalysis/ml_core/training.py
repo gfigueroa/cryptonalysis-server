@@ -6,7 +6,7 @@ from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingCo
     CryptonalysisConfigGrid
 from datetime import datetime
 from joblib import dump, load
-from pandas import DataFrame, Index
+from pandas import DataFrame
 from preprocessing import run_preprocessing_pipeline
 from sklearn import svm
 from sklearn.metrics import classification_report, accuracy_score

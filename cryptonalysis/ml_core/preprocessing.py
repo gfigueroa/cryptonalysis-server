@@ -498,7 +498,15 @@ def run_preprocessing_pipeline(crypto_name, preprocessing_config, save_data, sav
         transactions_df = load_preprocessed_data(crypto_name, preprocessing_config,
                                                  preprocessed_data_dir=preprocessed_data_dir)
         if transactions_df is not None:
-            return transactions_df
+            # Check that scaler exists if needed
+            if preprocessing_config.normalize and not preprocessing_config.normalize_by_row:
+                try:
+                    load_scaler(crypto_name, preprocessing_config, scaler_dir)  # Throws ValueError if inexistent
+                    return transactions_df
+                except ValueError:
+                    pass
+            else:
+                return transactions_df
 
     # Preprocess the data
     transactions_df = preprocess_dataframe(df, crypto_name, preprocessing_config, save_roi, scaler_dir=scaler_dir)

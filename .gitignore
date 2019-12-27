@@ -18,5 +18,4 @@ instance
 *.egg-info/
 
 .env
-dump/
 .DS_Store
