@@ -19,6 +19,10 @@ from sklearn.metrics import classification_report, accuracy_score
 # Logging
 logger = logging.getLogger()
 
+# Constants
+STARTING_INVESTMENT = None
+DAILY_ALLOWANCE = None
+
 
 def split_dataset(df):
     """
@@ -119,9 +123,9 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
                                   starting_investment, daily_allowance, lookahead_days)
 
         logger.info("Transaction simulation for SVC...")
-        predictor.run_transaction_simulation(y_pred_svc.tolist())
+        predictor.run_transaction_simulation(y_pred_svc.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
         logger.info("Transaction simulation for MLPClassifier...")
-        predictor.run_transaction_simulation(y_pred_mlp.tolist())
+        predictor.run_transaction_simulation(y_pred_mlp.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
 
         logger.info("Prediction simulation complete!\n")
         

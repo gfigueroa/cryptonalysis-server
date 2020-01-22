@@ -9,7 +9,7 @@ from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingCo
 from datetime import datetime
 from preprocessing import run_preprocessing_pipeline, CRYPTOCURRENCIES
 from training import split_datasets
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Activation, Dense
 from keras.layers import LSTM
 from keras.layers import Dropout
@@ -72,6 +72,8 @@ def build_deep_learning_datasets(split_dfs, crypto_name):
     """
     Build multi-channel datasets for deep learning models given a dictionary of split DataFrames per crypto and a main
     cryptocurrency for which to build output data.
+    The resulting input datasets have a shape of (sample size, price window size, number of cryptos used).
+    The resulting output datasets have a shape of (sample size,).
     :param split_dfs: a dictionary of previously split DataFrames (into X_dev, y_dev, X_eval, y_eval) per crypto.
     Each cryptocurrency DataFrame is used as a channel in the deep NN
     :type split_dfs: dict
@@ -107,7 +109,7 @@ def build_model(input_shape, output_size, neurons, activation_func="sigmoid",
     """
     Compile a Sequential Keras deep learning model given a set of parameters.
     The model has an LSTM layer.
-    :param input_shape: The input layer shape (not counting rows)
+    :param input_shape: The input layer shape (not counting sample size)
     :type input_shape: tuple
     :param output_size: The number of units in the output layer (usually 1)
     :type output_size: int
@@ -231,12 +233,11 @@ def _get_dl_run_name(crypto, preprocessing_config, training_config, deep_learnin
                                 deep_learning_config.to_single_line_str())
 
 
-def get_model_name(crypto, preprocessing_config, training_config, deep_learning_config, is_weights):
+def get_model_name(crypto, preprocessing_config, training_config, deep_learning_config):
     """
     Get a string with the name of a trained deep-learning model given preprocessing, training and deep learning
     configurations.
-    The model can correspond either to the model architecture itself (is_weights=False) or to the weights
-    (is_weights=True).
+    The saved model contains architecture, weights, and optimizer state.
 
     >>> get_model_name('LTC',
     ...     PreprocessingConfig(
@@ -264,8 +265,7 @@ def get_model_name(crypto, preprocessing_config, training_config, deep_learning_
     ...     {
     ...         'neurons': 10
     ...     }
-    ...     ),
-    ...     True
+    ...     )
     ... )
     'LSTM_LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7_10.h5'
 
@@ -277,12 +277,10 @@ def get_model_name(crypto, preprocessing_config, training_config, deep_learning_
     :type training_config: TrainingConfig
     :param deep_learning_config
     :type deep_learning_config: DeepLearningConfig
-    :param is_weights: Whether or not the model name corresponds to the weights (True) or to the model itself (False)
-    :type is_weights: bool
     :return: A file name
     :rtype: str
     """
-    file_type = 'json' if not is_weights else 'h5'
+    file_type = 'h5'
     return "LSTM_{}_{}_{}_{}.{}".format(crypto, preprocessing_config.to_single_line_str(),
                                         training_config.to_single_line_str(), deep_learning_config.to_single_line_str(),
                                         file_type)
@@ -363,18 +361,40 @@ def save_deep_learning_model(model, crypto, preprocessing_config, training_confi
     if not os.path.exists(dir_to_use):
         os.mkdir(dir_to_use)
 
-    model_file = get_model_name(crypto, preprocessing_config, training_config, deep_learning_config, False)
-    weights_file = get_model_name(crypto, preprocessing_config, training_config, deep_learning_config, True)
-
-    # Serialize model to JSON
-    model_json = model.to_json()
-    with open(os.path.join(dir_to_use, model_file), "w") as json_file:
-        json_file.write(model_json)
-
-    # Serialize weights to HDF5
-    model.save_weights(os.path.join(dir_to_use, weights_file))
+    model_file = get_model_name(crypto, preprocessing_config, training_config, deep_learning_config)
+    model_file = os.path.join(dir_to_use, model_file)
+    model.save(model_file)
 
     logger.info("Saved model to disk!\n")
+
+
+def load_deep_learning_model(crypto, preprocessing_config, training_config, deep_learning_config,
+                             model_dir=None):
+    """
+    Load a saved and trained deep learning model (NN) from disk.
+    :param crypto
+    :type crypto: str
+    :param preprocessing_config
+    :type preprocessing_config: PreprocessingConfig
+    :param training_config
+    :type training_config: TrainingConfig
+    :param deep_learning_config
+    :type deep_learning_config: DeepLearningConfig
+    :param model_dir: (Default None) The (overridden) directory where the model should be loaded from.
+    If None, the default `MODELS_DIR` is used.
+    :type model_dir: str
+    :return: A fitted model loaded from disk
+    :rtype: Sequential
+    """
+    dir_to_use = MODELS_DIR if model_dir is None else model_dir
+    if not os.path.exists(dir_to_use):
+        os.mkdir(dir_to_use)
+
+    model_file = get_model_name(crypto, preprocessing_config, training_config, deep_learning_config)
+    model_file = os.path.join(dir_to_use, model_file)
+    model = load_model(model_file)
+
+    return model
 
 
 def run_deep_learning(cryptonalysis_config_grid):

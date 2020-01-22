@@ -105,7 +105,7 @@ class TestCryptoPredictor(unittest.TestCase):
         # Run Predictor
         self.default_predictor.run_predictor()
         self.assertEqual(self.default_predictor.owned_crypto, 0)  # All crypto sold at the end
-        self.assertGreater(self.default_predictor.cash, 0)
+        self.assertAlmostEqual(self.default_predictor.cash, 1108.16542, 5)
         self.assertEqual(self.default_predictor.total_investment, 175)
         self.assertEqual(len(self.default_predictor.transactions), 15)
 
@@ -117,7 +117,7 @@ class TestCryptoPredictor(unittest.TestCase):
         transactions = [0, 1]
         self.default_predictor.run_transaction_simulation(transactions)
         self.assertEqual(self.default_predictor.owned_crypto, 0)
-        self.assertAlmostEqual(self.default_predictor.cash, 105.97981, 5)
+        self.assertAlmostEqual(self.default_predictor.cash, 107.92079, 5)
 
         # Verify that run_predictor() and run_transaction_simulation() have same results
         actual_run = DEFAULT_PREDICTOR_CLS(market, price_list=PRICE_SERIES, window_size=WINDOW_SIZE,
@@ -192,7 +192,7 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
         # Run Predictor with default parameters
         self.biff_predictor.run_predictor()
         self.assertEqual(self.biff_predictor.owned_crypto, 0)  # All crypto sold at the end
-        self.assertAlmostEqual(self.biff_predictor.cash, 1089.51665, 5)
+        self.assertAlmostEqual(self.biff_predictor.cash, 1108.16542, 5)
         self.assertEqual(self.biff_predictor.total_investment, 175)
         self.assertEqual(len(self.biff_predictor.transactions), 15)
         actual_transactions = [t['transaction'] for t in self.biff_predictor.transactions]
@@ -206,7 +206,7 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
                                                 ending_date=ENDING_DATE, lookahead_days=2)
         modified_biff_predictor.run_predictor()
         self.assertEqual(modified_biff_predictor.owned_crypto, 0)  # All crypto sold at the end
-        self.assertAlmostEqual(modified_biff_predictor.cash, 789.19383, 5)
+        self.assertAlmostEqual(modified_biff_predictor.cash, 802.51169, 5)
         self.assertEqual(modified_biff_predictor.total_investment, 170)
         self.assertEqual(len(modified_biff_predictor.transactions), 14)
         actual_transactions = [t['transaction'] for t in modified_biff_predictor.transactions]
@@ -224,7 +224,7 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
         # Run Predictor with default parameters
         self.biff_predictor_smart.run_predictor()
         self.assertEqual(self.biff_predictor_smart.owned_crypto, 0)  # All crypto sold at the end
-        self.assertAlmostEqual(self.biff_predictor_smart.cash, 1089.51665, 5)
+        self.assertAlmostEqual(self.biff_predictor_smart.cash, 1108.16542, 5)
         self.assertEqual(self.biff_predictor_smart.total_investment, 175)
         self.assertEqual(len(self.biff_predictor_smart.transactions), 15)
         actual_transactions = [t['transaction'] for t in self.biff_predictor_smart.transactions]
@@ -238,7 +238,7 @@ class TestCryptoPredictorImplementations(unittest.TestCase):
                                                            ending_date=ENDING_DATE, lookahead_days=2)
         modified_biff_predictor_smart.run_predictor()
         self.assertEqual(modified_biff_predictor_smart.owned_crypto, 0)  # All crypto sold at the end
-        self.assertAlmostEqual(modified_biff_predictor_smart.cash, 1106.42608, 5)
+        self.assertAlmostEqual(modified_biff_predictor_smart.cash, 1125.45159, 5)
         self.assertEqual(modified_biff_predictor_smart.total_investment, 170)
         self.assertEqual(len(modified_biff_predictor_smart.transactions), 14)
         actual_transactions = [t['transaction'] for t in modified_biff_predictor_smart.transactions]
