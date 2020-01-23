@@ -92,6 +92,8 @@ class TestTrainingFunctions(unittest.TestCase):
         self.assertEqual(X_eval.shape, (8, 5))
         self.assertEqual(y_eval.shape, (8,))
         self.assertListEqual(list(X_eval.index), list(y_eval.index))  # Dates (index order) are preserved
+        intersection = set(X_dev.index).intersection(X_eval.index)
+        self.assertTrue(len(intersection) == 0)  # Index intersection is empty
 
         # Test no shuffle split
         _, _, _, _, _, _, X_dev, y_dev, X_eval, y_eval = split_datasets(self.preprocessed_data, shuffle=False)
@@ -105,6 +107,8 @@ class TestTrainingFunctions(unittest.TestCase):
         self.assertListEqual(list(X_eval.index), list(y_eval.index))  # Dates (index order) are preserved
         self.assertEqual(X_eval.index[0], pd.Timestamp('2019-01-12 00:00:00'))
         self.assertEqual(y_eval.index[-1], pd.Timestamp('2019-01-19 00:00:00'))
+        intersection = set(X_dev.index).intersection(X_eval.index)
+        self.assertTrue(len(intersection) == 0)  # Index intersection is empty
 
     def test_get_optimized_classifier_with_shuffle(self):
         # Split dataset for classification
@@ -144,7 +148,7 @@ class TestTrainingFunctions(unittest.TestCase):
         grid_search_cv_mlp, mlp_training_acc, mlp_eval_acc = \
             get_optimized_classifier(mlp, self.mlp_tuned_parameters, X_dev, y_dev, X_eval, y_eval)
         self.assertAlmostEquals(mlp_training_acc, 0.71429, 5)
-        self.assertEqual(mlp_eval_acc, 0.5)
+        self.assertEqual(mlp_eval_acc, 0.25)
 
     def test_save_and_load_model(self):
         # Split dataset for classification

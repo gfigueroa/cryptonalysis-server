@@ -19,6 +19,10 @@ from sklearn.metrics import classification_report, accuracy_score
 # Logging
 logger = logging.getLogger()
 
+# Constants
+STARTING_INVESTMENT = None
+DAILY_ALLOWANCE = None
+
 
 def split_dataset(df):
     """
@@ -119,9 +123,9 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
                                   starting_investment, daily_allowance, lookahead_days)
 
         logger.info("Transaction simulation for SVC...")
-        predictor.run_transaction_simulation(y_pred_svc.tolist())
+        predictor.run_transaction_simulation(y_pred_svc.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
         logger.info("Transaction simulation for MLPClassifier...")
-        predictor.run_transaction_simulation(y_pred_mlp.tolist())
+        predictor.run_transaction_simulation(y_pred_mlp.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
 
         logger.info("Prediction simulation complete!\n")
         
@@ -180,6 +184,30 @@ def predict_for_date(crypto_name, preprocessing_config, training_config, for_dat
     }
 
 
+def run_multiple_simulations(conf_path):
+    config_files = filter(lambda c: c.startswith('training_best'), os.listdir(conf_path))
+    max_roi = 0
+    max_roi_conf = None
+    max_roi_perc = 0
+    max_roi_perc_conf = None
+    for conf_file in config_files:
+        conf = load_cryptonalysis_config(config_path, conf_file)
+        predictor = run_prediction_simulation(conf)
+        roi = predictor.cash - predictor.total_investment
+        roi_perc = roi / predictor.total_investment
+        if roi > max_roi:
+            max_roi = roi
+            max_roi_conf = conf_file
+        if roi_perc > max_roi_perc:
+            max_roi_perc = roi_perc
+            max_roi_perc_conf = conf_file
+
+    logger.info("Max roi: {}".format(max_roi))
+    logger.info("Conf: {}".format(max_roi_conf))
+    logger.info("Max roi %: {}".format(max_roi_perc))
+    logger.info("Conf: {}".format(max_roi_perc_conf))
+
+
 if __name__ == '__main__':
     # random seed for reproducibility
     np.random.seed(202)
@@ -187,20 +215,22 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         raise ValueError('Action not given in args! Must be "simulation" or "prediction".')
 
-    if len(sys.argv) < 3:
-        raise ValueError('Config file not given in args!')
-
     action = sys.argv[1].lower()
-    config_file = sys.argv[2]
-
     config_path = 'config'
-    config = load_cryptonalysis_config(config_path, config_file)
 
-    if action == 'simulation':
-        run_prediction_simulation(config)
-    elif action == 'prediction':
-        today = parse_date('today')
-        predictions = predict_for_date(config.crypto, config.preprocessing, config.training, today)
-        logger.info("Predictions:\n{}".format(predictions))
+    if action == 'multi_simulations':
+        run_multiple_simulations(config_path)
     else:
-        logger.error("Wrong action \"{}\". Must be \"simulation\" or \"prediction\".".format(action))
+        if len(sys.argv) < 3:
+            raise ValueError('Config file not given in args!')
+        config_file = sys.argv[2]
+        config = load_cryptonalysis_config(config_path, config_file)
+
+        if action == 'simulation':
+            run_prediction_simulation(config)
+        elif action == 'prediction':
+            today = parse_date('today')
+            predictions = predict_for_date(config.crypto, config.preprocessing, config.training, today)
+            logger.info("Predictions:\n{}".format(predictions))
+        else:
+            logger.error("Wrong action \"{}\". Must be \"simulation\" or \"prediction\".".format(action))

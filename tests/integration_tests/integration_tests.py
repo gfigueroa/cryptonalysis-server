@@ -9,8 +9,9 @@ import random
 import unittest
 from cryptonalysis.config import load_cryptonalysis_config
 from cryptonalysis.ml_core.prediction import run_prediction_simulation
-from cryptonalysis.ml_core.preprocessing import run_preprocessing_pipeline
+from cryptonalysis.ml_core.preprocessing import run_preprocessing_pipeline, CRYPTOCURRENCIES
 from cryptonalysis.ml_core.training import run_training_pipeline
+from cryptonalysis.ml_core.training_dl import get_split_dfs, run_deep_learning_pipeline
 from datetime import date
 
 RES_DIR = os.path.join('tests', 'resources')
@@ -49,14 +50,26 @@ class IntegrationTests(unittest.TestCase):
     def test_training_pipeline(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
         self.assertAlmostEqual(trained_classifiers['SVC']['training_acc'], 0.625, 3)
-        self.assertEquals(trained_classifiers['SVC']['eval_acc'], 0.48)
-        self.assertAlmostEqual(trained_classifiers['MLPClassifier']['training_acc'], 0.58333, 5)
-        self.assertEquals(trained_classifiers['MLPClassifier']['eval_acc'], 0.52)
+        self.assertEquals(trained_classifiers['SVC']['eval_acc'], 0.44)
+        self.assertGreater(trained_classifiers['MLPClassifier']['training_acc'], 0)
+        self.assertGreater(trained_classifiers['MLPClassifier']['eval_acc'], 0)
+
+    def test_deep_learning_pipeline(self):
+        preprocessed_dfs = {
+            crypto_name: run_preprocessing_pipeline(crypto_name, self.config.preprocessing, False, False,
+                                                    master_data_dir=RES_DIR, preprocessed_data_dir=RES_DIR,
+                                                    scaler_dir=RES_DIR)
+            for crypto_name in CRYPTOCURRENCIES
+        }
+        split_dfs = get_split_dfs(preprocessed_dfs, self.config.training)
+        model_dict = run_deep_learning_pipeline(self.config.crypto, split_dfs, self.config.deep_learning)
+        self.assertAlmostEqual(model_dict['metrics']['acc'], 0.4, 1)
+        self.assertGreater(model_dict['metrics']['loss'], 0)
 
     def test_prediction_simulation(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
         predictor = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR, models=trained_classifiers)
-        self.assertAlmostEqual(predictor.cash, 156.10829, 5)
+        self.assertAlmostEqual(predictor.cash, 182.65191, 5)
         self.assertEquals(predictor.owned_crypto, 0)
         self.assertEquals(predictor.total_investment, 200)
         self.assertEquals(predictor.ending_date, date(2019, 9, 30))

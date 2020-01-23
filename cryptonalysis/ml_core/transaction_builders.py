@@ -127,13 +127,16 @@ class CryptoPredictor(object):
         if self.prob_sell < 0 or self.prob_sell > 1:
             raise ValueError("prob_sell should be a decimal between 0 (inclusive) and 1 (inclusive).")
 
-    def reset_predictor_state(self):
+    def reset_predictor_state(self, starting_investment=None):
         """
         Reset the CryptoPredictor's state variables.
+        :param starting_investment: The starting investment (in fiat)
+        :type starting_investment: float
         """
 
-        self.total_investment = self.starting_investment
-        self.cash = self.starting_investment
+        starting_investment = starting_investment or self.starting_investment
+        self.total_investment = starting_investment
+        self.cash = starting_investment
         self.owned_crypto = 0
         self.transactions = []
 
@@ -300,12 +303,9 @@ class CryptoPredictor(object):
                                                                                 self.prob_buy, self.prob_sell))
         logger.info("Start date: {0}".format(self._starting_date))
 
-        # First crypto purchase
-        current_price = float(self._price_list[self._window_size - 1])
-        self.perform_transaction(True, self.get_max_crypto_transaction(True, current_price), current_price)
-
         day = 1
         stop_day = 0
+        current_price = float(self._price_list[self._window_size - 1])
         for start_day in range(len(self._price_list) - self._window_size - (self.lookahead_days - 1)):
             stop_day = start_day + self._window_size
             logger.debug("Day {0} - {1}".format(day, self._price_list.index[stop_day]))
@@ -339,28 +339,31 @@ class CryptoPredictor(object):
 
         return self.transactions
 
-    def run_transaction_simulation(self, transactions):
+    def run_transaction_simulation(self, transactions, starting_investment=None, daily_allowance=None):
         """
         Run a transaction simulation given a list of transactions to perform per day.
         :param transactions: a list of transactions (as ints or as strings) to perform on the given daily prices.
         :type transactions: list of int or list of str
+        :param starting_investment: The starting investment to override the one set on the CryptoPredictor instance.
+        :type starting_investment: float
+        :param daily_allowance: A daily allowance to override the one set on the CryptoPredictor instance.
+        :type daily_allowance: float
         """
 
-        self.reset_predictor_state()
+        starting_investment = starting_investment or self.starting_investment
+        daily_allowance = daily_allowance or self.daily_allowance
+        self.reset_predictor_state(starting_investment)
 
         logger.info("Start date: {0}".format(self._starting_date))
 
         # Start trading
         logger.info("Running transaction simulation...")
         logger.info("Predictor parameters:\nStarting investment: ${0}, Daily allowance: ${1}".format(
-            self.starting_investment, self.daily_allowance))
-
-        # First crypto purchase
-        current_price = float(self._price_list[self._window_size - 1])
-        self.perform_transaction(True, self.get_max_crypto_transaction(True, current_price), current_price)
+            starting_investment, daily_allowance))
 
         day = 0
         stop_day = 0
+        current_price = float(self._price_list[self._window_size - 1])
         for start_day in range(len(self._price_list) - self._window_size - (self.lookahead_days - 1)):
             if day >= len(transactions):
                 break
@@ -386,8 +389,8 @@ class CryptoPredictor(object):
             self.perform_transaction(transaction == 'BUY', crypto_amount, current_price)
 
             # End of the day allowance
-            self.cash += self.daily_allowance
-            self.total_investment += self.daily_allowance
+            self.cash += daily_allowance
+            self.total_investment += daily_allowance
 
             day += 1
 

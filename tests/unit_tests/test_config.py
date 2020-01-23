@@ -41,10 +41,10 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(tc_csv[1], '4,0.5,True,0.7')
 
         dlc_s = dlc.to_single_line_str()
-        self.assertEqual(dlc_s, '30')
+        self.assertEqual(dlc_s, '10')
         dlc_csv = dlc.to_csv_str()
         self.assertEqual(dlc_csv[0], u'neurons')
-        self.assertEqual(dlc_csv[1], '30')
+        self.assertEqual(dlc_csv[1], '10')
 
     def test_config_grid(self):
         cg = self.config_grid

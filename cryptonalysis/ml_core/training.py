@@ -21,7 +21,7 @@ RESULTS_DIR = os.path.join('cryptonalysis', 'results')
 MODELS_DIR = os.path.join('cryptonalysis', 'models')
 
 
-def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5):
+def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5, shuffled_indices=None):
     """
     Get split datasets from a DataFrame used for non-CV (no Cross Validation), CV, and Grid Search CV.
     For non-CV, the DF is split into X_training, y_training, X_testing, y_testing.
@@ -32,29 +32,51 @@ def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5):
     to test a model with those values (and avoid overfitting).
     :param df: The DataFrame to split
     :type df: DataFrame
-    :param shuffle: Whether or not to shuffle the rows of the DF (TODO: use in time series?)
+    :param shuffle: Whether or not to shuffle the rows of the DF
     :type shuffle: bool
     :param training_size: (default: 0.7) The size (0~1) of the training dataset (used in non-CV)
     :type training_size: float
     :param dev_size: (default: 0.5) The size (0~1) of the development dataset (used in Grid Search CV)
     :type dev_size: float
+    :param shuffled_indices: A dictionary of fixed indices to use to shuffle the data. Each key represents the index for
+    a split type (namely: 'cv', 'training', 'testing', 'dev', 'eval').
+    This is useful when multiple dataframes need to be shuffled with the same arrangement (e.g. when using multiple
+    channels in a neural network).
+    If shuffle=False, this parameter is ignored.
+    :type shuffled_indices: dict
     :return: a tuple with different splits for the given DataFrame
-    :rtype: (DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame,
-             DataFrame, DataFrame, DataFrame)
+    :rtype: (DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame, DataFrame,
+    DataFrame)
     """
     if shuffle:
-        shuffled_df = df.sample(frac=1)
+        if shuffled_indices:
+            # Used for non-CV
+            training_data = df.reindex(shuffled_indices['training'])
+            testing_data = df.reindex(shuffled_indices['testing'])
 
-        # Used for non-CV
-        training_data = shuffled_df.sample(frac=training_size)
-        testing_data = shuffled_df[~shuffled_df.index.isin(training_data.index)]
+            # Used for CV
+            shuffled_df = df.reindex(shuffled_indices['cv'])
+            X = shuffled_df.iloc[:, :-1]
+            y = shuffled_df['transaction']
 
-        # Used for CV
-        X = shuffled_df.iloc[:, :-1]
-        y = shuffled_df['transaction']
+            # Used for Grid Search CV
+            X_dev = df.reindex(shuffled_indices['dev']).iloc[:, :-1]
+            y_dev = df.reindex(shuffled_indices['dev'])['transaction']
+            X_eval = df.reindex(shuffled_indices['eval']).iloc[:, :-1]
+            y_eval = df.reindex(shuffled_indices['eval'])['transaction']
+        else:
+            shuffled_df = df.sample(frac=1)
 
-        # Used for Grid Search CV
-        X_dev, X_eval, y_dev, y_eval = train_test_split(X, y, test_size=dev_size)
+            # Used for non-CV
+            training_data = shuffled_df.sample(frac=training_size)
+            testing_data = shuffled_df[~shuffled_df.index.isin(training_data.index)]
+
+            # Used for CV
+            X = shuffled_df.iloc[:, :-1]
+            y = shuffled_df['transaction']
+
+            # Used for Grid Search CV
+            X_dev, X_eval, y_dev, y_eval = train_test_split(X, y, test_size=dev_size)
     else:
         # Used for non-CV
         training_data = df[:int(len(df) * training_size)]
@@ -404,6 +426,7 @@ def run_classic_training(cryptonalysis_config_grid):
             # Grid search training pipeline parameters
             for training_config in cryptonalysis_config_grid.training_config_grid:
                 logger.info("Processing configuration {}/{}...".format(count, cryptonalysis_config_grid.grid_size))
+                count += 1
 
                 # Check if training run has been executed
                 if cryptonalysis_config_grid.save_training_results:
@@ -422,7 +445,6 @@ def run_classic_training(cryptonalysis_config_grid):
                 except Exception as e:
                     logger.error("Error in training pipeline {}! Skipping...".format(e.message))
                     logger.error(e)
-                count += 1
 
 
 if __name__ == '__main__':
