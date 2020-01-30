@@ -55,8 +55,21 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
     :param models: (Default None) A dictionary with the trained classifiers to use for prediction. If None, the models
     will be loaded from the models directory.
     :type models: dict
-    :return The resulting CryptoPredictor instance after running the simulation
-    :rtype: CryptoPredictor
+    :return A dictionary with results of the simulation.
+    {
+        'predictor': predictor instance,
+        'svc': {
+            'cash': svc_cash,
+            'total_investment': svc_total_investment,
+            'owned_crypto': svc_owned_crypto
+        },
+        'mlp': {
+            'cash': mlp_cash,
+            'total_investment': mlp_total_investment,
+            'owned_crypto': mlp_owned_crypto
+        }
+    }
+    :rtype: dict
     """
     logger.info("Running prediction simulation...")
     logger.info("Preprocessing config:\n" + str(cryptonalysis_config.preprocessing))
@@ -124,12 +137,32 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
 
         logger.info("Transaction simulation for SVC...")
         predictor.run_transaction_simulation(y_pred_svc.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
+        svc_cash = predictor.cash
+        svc_total_investment = predictor.total_investment
+        svc_owned_crypto = predictor.owned_crypto
         logger.info("Transaction simulation for MLPClassifier...")
         predictor.run_transaction_simulation(y_pred_mlp.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
+        mlp_cash = predictor.cash
+        mlp_total_investment = predictor.total_investment
+        mlp_owned_crypto = predictor.owned_crypto
 
         logger.info("Prediction simulation complete!\n")
+
+        results = {
+            'predictor': predictor,
+            'svc': {
+                'cash': svc_cash,
+                'total_investment': svc_total_investment,
+                'owned_crypto': svc_owned_crypto
+            },
+            'mlp': {
+                'cash': mlp_cash,
+                'total_investment': mlp_total_investment,
+                'owned_crypto': mlp_owned_crypto
+            }
+        }
         
-        return predictor
+        return results
     except Exception as e:
         logger.error("Error in prediction simulation!")
         logger.error(e.message)
@@ -186,26 +219,41 @@ def predict_for_date(crypto_name, preprocessing_config, training_config, for_dat
 
 def run_multiple_simulations(conf_path):
     config_files = filter(lambda c: c.startswith('training_best'), os.listdir(conf_path))
-    max_roi = 0
-    max_roi_conf = None
-    max_roi_perc = 0
-    max_roi_perc_conf = None
+    max_roi_svc = 0
+    max_roi_conf_svc = None
+    max_roi_perc_svc = 0
+    max_roi_perc_conf_svc = None
+    max_roi_mlp = 0
+    max_roi_conf_mlp = None
+    max_roi_perc_mlp = 0
+    max_roi_perc_conf_mlp = None
     for conf_file in config_files:
         conf = load_cryptonalysis_config(config_path, conf_file)
-        predictor = run_prediction_simulation(conf)
-        roi = predictor.cash - predictor.total_investment
-        roi_perc = roi / predictor.total_investment
-        if roi > max_roi:
-            max_roi = roi
-            max_roi_conf = conf_file
-        if roi_perc > max_roi_perc:
-            max_roi_perc = roi_perc
-            max_roi_perc_conf = conf_file
+        results = run_prediction_simulation(conf)
 
-    logger.info("Max roi: {}".format(max_roi))
-    logger.info("Conf: {}".format(max_roi_conf))
-    logger.info("Max roi %: {}".format(max_roi_perc))
-    logger.info("Conf: {}".format(max_roi_perc_conf))
+        svc_roi = results['svc']['cash'] - results['svc']['total_investment']
+        svc_roi_perc = svc_roi / results['svc']['total_investment']
+        if svc_roi > max_roi_svc:
+            max_roi_svc = svc_roi
+            max_roi_conf_svc = conf_file
+        if svc_roi_perc > max_roi_perc_svc:
+            max_roi_perc_svc = svc_roi_perc
+            max_roi_perc_conf_svc = conf_file
+
+        mlp_roi = results['mlp']['cash'] - results['mlp']['total_investment']
+        mlp_roi_perc = mlp_roi / results['mlp']['total_investment']
+        if mlp_roi > max_roi_mlp:
+            max_roi_mlp = mlp_roi
+            max_roi_conf_mlp = conf_file
+        if mlp_roi_perc > max_roi_perc_mlp:
+            max_roi_perc_mlp = mlp_roi_perc
+            max_roi_perc_conf_mlp = conf_file
+
+    logger.info("Max roi svc: {}, conf: {}".format(max_roi_svc, max_roi_conf_svc))
+    logger.info("Max roi % svc: {}, conf: {}".format(max_roi_perc_svc, max_roi_perc_conf_svc))
+
+    logger.info("Max roi mlp: {}, conf: {}".format(max_roi_mlp, max_roi_conf_mlp))
+    logger.info("Max roi % mlp: {}, conf: {}".format(max_roi_perc_mlp, max_roi_perc_conf_mlp))
 
 
 if __name__ == '__main__':

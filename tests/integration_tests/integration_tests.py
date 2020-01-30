@@ -68,8 +68,8 @@ class IntegrationTests(unittest.TestCase):
 
     def test_prediction_simulation(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
-        predictor = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR, models=trained_classifiers)
-        self.assertAlmostEqual(predictor.cash, 182.65191, 5)
-        self.assertEquals(predictor.owned_crypto, 0)
-        self.assertEquals(predictor.total_investment, 200)
-        self.assertEquals(predictor.ending_date, date(2019, 9, 30))
+        results = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR, models=trained_classifiers)
+        self.assertAlmostEqual(results['mlp']['cash'], 182.65191, 5)
+        self.assertEquals(results['mlp']['owned_crypto'], 0)
+        self.assertEquals(results['mlp']['total_investment'], 200)
+        self.assertEquals(results['predictor'].ending_date, date(2019, 9, 30))
