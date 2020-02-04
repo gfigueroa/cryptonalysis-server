@@ -7,7 +7,7 @@ import unittest
 from cryptonalysis.config import PreprocessingConfig, TrainingConfig
 from cryptonalysis.ml_core.prediction import split_dataset, predict_for_date
 from cryptonalysis.ml_core.preprocessing import load_preprocessed_data
-from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name
+from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name, get_transaction_type
 from cryptonalysis.utils.misc_utils import parse_date
 from datetime import date
 
@@ -84,4 +84,5 @@ class TestPredictionFunctions(unittest.TestCase):
             'MLPClassifier': 'BUY'
         }
         predictions = predict_for_date(CRYPTO_NAME, PREPROCESSING_CONFIG, TRAINING_CONFIG, FOR_DATE, RES_DIR, RES_DIR)
+        predictions = {k: get_transaction_type(v.iloc[0]) for k, v in predictions.items()}
         self.assertDictEqual(predictions, expected_predictions)

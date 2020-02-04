@@ -155,7 +155,7 @@ class TestDeepLearningFunctions(unittest.TestCase):
         # Evaluate model
         metric_values = model.evaluate(test_inputs, test_outputs, verbose=1)
         metrics = {metric_name: metric_value for (metric_name, metric_value) in zip(model.metrics_names, metric_values)}
-        self.assertAlmostEqual(metrics['acc'], 0.5, 1)
+        self.assertAlmostEqual(metrics['acc'], 0.25, 1)
         self.assertAlmostEqual(metrics['loss'], 0.5, 1)
 
     def test_load_and_save_model(self):

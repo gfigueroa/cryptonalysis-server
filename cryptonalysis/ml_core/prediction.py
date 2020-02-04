@@ -3,11 +3,10 @@ import numpy as np
 import os
 import sys
 from cryptonalysis.config import load_cryptonalysis_config, CryptonalysisConfig
-from cryptonalysis.ml_core.transaction_builders import CryptoPredictor
 from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from cryptonalysis.utils.misc_utils import parse_date
 from market import market
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from preprocessing import get_historical_df, get_price_list, preprocess_dataframe, preprocess_data_point, \
     CRYPTOCURRENCIES, MASTER_DATA_DIR
 
@@ -58,15 +57,17 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
     :return A dictionary with results of the simulation.
     {
         'predictor': predictor instance,
-        'svc': {
+        'SVC': {
             'cash': svc_cash,
             'total_investment': svc_total_investment,
-            'owned_crypto': svc_owned_crypto
+            'owned_crypto': svc_owned_crypto,
+            'y_pred': y_pred_svc
         },
-        'mlp': {
+        'MLPClassifier': {
             'cash': mlp_cash,
             'total_investment': mlp_total_investment,
-            'owned_crypto': mlp_owned_crypto
+            'owned_crypto': mlp_owned_crypto,
+            'y_pred': y_pred_mlp
         }
     }
     :rtype: dict
@@ -106,13 +107,13 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
 
         # Evaluation dataset
         logger.info("Evaluation results for SVC model:")
-        y_true, y_pred_svc = y, svc_model.predict(X)
+        y_true, y_pred_svc = y, Series(svc_model.predict(X), y.index)
         logger.info('\n' + classification_report(y_true, y_pred_svc))
         accuracy = accuracy_score(y_true, y_pred_svc)
         logger.info("Evaluation accuracy (SVC): {}\n".format(accuracy))
 
         logger.info("Evaluation results for MLPClassifier model:")
-        y_true, y_pred_mlp = y, mlp_model.predict(X)
+        y_true, y_pred_mlp = y, Series(mlp_model.predict(X), y.index)
         logger.info('\n' + classification_report(y_true, y_pred_mlp))
         accuracy = accuracy_score(y_true, y_pred_mlp)
         logger.info("Evaluation accuracy (MLPClassifier): {}\n".format(accuracy))
@@ -150,15 +151,17 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
 
         results = {
             'predictor': predictor,
-            'svc': {
+            'SVC': {
                 'cash': svc_cash,
                 'total_investment': svc_total_investment,
-                'owned_crypto': svc_owned_crypto
+                'owned_crypto': svc_owned_crypto,
+                'y_pred': y_pred_svc
             },
-            'mlp': {
+            'MLPClassifier': {
                 'cash': mlp_cash,
                 'total_investment': mlp_total_investment,
-                'owned_crypto': mlp_owned_crypto
+                'owned_crypto': mlp_owned_crypto,
+                'y_pred': y_pred_mlp
             }
         }
         
@@ -169,7 +172,8 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
         raise e
 
 
-def predict_for_date(crypto_name, preprocessing_config, training_config, for_date, scaler_dir=None, model_dir=None):
+def predict_for_date(crypto_name, preprocessing_config, training_config, for_date, scaler_dir=None, model_dir=None,
+                     models=None):
     """
     Predict a transaction (BUY/SELL) for a given date with a given CryptonalysisConfig object.
     The data for the given date is extracted from a remote location and preprocessed given the specific configuration.
@@ -188,6 +192,9 @@ def predict_for_date(crypto_name, preprocessing_config, training_config, for_dat
     :param model_dir: (Default None) The (overridden) directory where the model should be loaded from.
     If None, the default `MODELS_DIR` is used.
     :type model_dir: str
+    :param models: (Default None) A dictionary with the trained classifiers to use for prediction. If None, the models
+    will be loaded from the models directory.
+    :type models: dict
     :return A dictionary of predictions per classification type. For example:
     {
         SVC: BUY,
@@ -204,12 +211,16 @@ def predict_for_date(crypto_name, preprocessing_config, training_config, for_dat
     # Split dataset for classification
     X, y = split_dataset(preprocessed_data)
 
-    svc_model = load_model('SVC', crypto_name, preprocessing_config, training_config, model_dir)
-    mlp_model = load_model('MLPClassifier', crypto_name, preprocessing_config, training_config, model_dir)
+    if models:
+        svc_model = models['SVC']['classifier']
+        mlp_model = models['MLPClassifier']['classifier']
+    else:
+        svc_model = load_model('SVC', crypto_name, preprocessing_config, training_config, model_dir)
+        mlp_model = load_model('MLPClassifier', crypto_name, preprocessing_config, training_config, model_dir)
 
     # Prediction
-    y_pred_svc = get_transaction_type(svc_model.predict(X)[0])
-    y_pred_mlp = get_transaction_type(mlp_model.predict(X)[0])
+    y_pred_svc = Series(svc_model.predict(X), y.index)
+    y_pred_mlp = Series(mlp_model.predict(X), y.index)
 
     return {
         'SVC': y_pred_svc,
@@ -231,8 +242,8 @@ def run_multiple_simulations(conf_path):
         conf = load_cryptonalysis_config(config_path, conf_file)
         results = run_prediction_simulation(conf)
 
-        svc_roi = results['svc']['cash'] - results['svc']['total_investment']
-        svc_roi_perc = svc_roi / results['svc']['total_investment']
+        svc_roi = results['SVC']['cash'] - results['SVC']['total_investment']
+        svc_roi_perc = svc_roi / results['SVC']['total_investment']
         if svc_roi > max_roi_svc:
             max_roi_svc = svc_roi
             max_roi_conf_svc = conf_file
@@ -240,8 +251,8 @@ def run_multiple_simulations(conf_path):
             max_roi_perc_svc = svc_roi_perc
             max_roi_perc_conf_svc = conf_file
 
-        mlp_roi = results['mlp']['cash'] - results['mlp']['total_investment']
-        mlp_roi_perc = mlp_roi / results['mlp']['total_investment']
+        mlp_roi = results['MLPClassifier']['cash'] - results['MLPClassifier']['total_investment']
+        mlp_roi_perc = mlp_roi / results['MLPClassifier']['total_investment']
         if mlp_roi > max_roi_mlp:
             max_roi_mlp = mlp_roi
             max_roi_conf_mlp = conf_file
@@ -279,6 +290,8 @@ if __name__ == '__main__':
         elif action == 'prediction':
             today = parse_date('today')
             predictions = predict_for_date(config.crypto, config.preprocessing, config.training, today)
-            logger.info("Predictions:\n{}".format(predictions))
+            logger.info('Predictions:')
+            for k, v in predictions.items():
+                print "{}: {}".format(k, get_transaction_type(v.iloc[0]))
         else:
             logger.error("Wrong action \"{}\". Must be \"simulation\" or \"prediction\".".format(action))
