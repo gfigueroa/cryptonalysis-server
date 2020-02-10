@@ -8,11 +8,11 @@ import pandas as pd
 import random
 import unittest
 from cryptonalysis.config import load_cryptonalysis_config
-from cryptonalysis.ml_core.prediction import run_prediction_simulation
+from cryptonalysis.ml_core.prediction import run_prediction_simulation, predict_for_date
 from cryptonalysis.ml_core.preprocessing import run_preprocessing_pipeline, CRYPTOCURRENCIES
 from cryptonalysis.ml_core.training import run_training_pipeline
 from cryptonalysis.ml_core.training_dl import get_split_dfs, run_deep_learning_pipeline
-from datetime import date
+from datetime import date, timedelta
 
 RES_DIR = os.path.join('tests', 'resources')
 CONFIG_TEST = 'config_test.conf'
@@ -69,7 +69,44 @@ class IntegrationTests(unittest.TestCase):
     def test_prediction_simulation(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
         results = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR, models=trained_classifiers)
-        self.assertAlmostEqual(results['mlp']['cash'], 182.65191, 5)
-        self.assertEquals(results['mlp']['owned_crypto'], 0)
-        self.assertEquals(results['mlp']['total_investment'], 200)
+        self.assertAlmostEqual(results['MLPClassifier']['cash'], 182.65191, 5)
+        self.assertEquals(results['MLPClassifier']['owned_crypto'], 0)
+        self.assertEquals(results['MLPClassifier']['total_investment'], 200)
         self.assertEquals(results['predictor'].ending_date, date(2019, 9, 30))
+
+    def test_prediction_simulation_vs_predict_for_date(self):
+        trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
+        simulation_results = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR,
+                                                       models=trained_classifiers)
+
+        # Test SVC
+        max_requests = 5
+        simulation_predictions = simulation_results['SVC']['y_pred']
+        requests = 0
+        for i in range(len(simulation_predictions)):
+            if requests >= max_requests:
+                break
+            dt = list(simulation_predictions.index)[i].date()
+            simulation_prediction = simulation_predictions.iloc[i]
+            date_prediction = predict_for_date(self.config.crypto, self.config.preprocessing, self.config.training,
+                                               dt + timedelta(days=1), scaler_dir=RES_DIR,
+                                               models=trained_classifiers)
+            self.assertEqual(list(date_prediction['SVC'].index)[0].date(), dt)
+            self.assertEqual(date_prediction['SVC'].iloc[0], simulation_prediction)
+            requests += 1
+
+        # Test MLPClassifier
+        max_requests = 5
+        simulation_predictions = simulation_results['MLPClassifier']['y_pred']
+        requests = 0
+        for i in range(len(simulation_predictions)):
+            if requests >= max_requests:
+                break
+            dt = list(simulation_predictions.index)[i].date()
+            simulation_prediction = simulation_predictions.iloc[i]
+            date_prediction = predict_for_date(self.config.crypto, self.config.preprocessing, self.config.training,
+                                               dt + timedelta(days=1), scaler_dir=RES_DIR,
+                                               models=trained_classifiers)
+            self.assertEqual(list(date_prediction['MLPClassifier'].index)[0].date(), dt)
+            self.assertEqual(date_prediction['MLPClassifier'].iloc[0], simulation_prediction)
+            requests += 1
