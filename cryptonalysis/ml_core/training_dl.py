@@ -3,6 +3,7 @@
 import logging
 import numpy as np
 import os
+import platform
 import sys
 from cryptonalysis.config import load_cryptonalysis_config_grid, PreprocessingConfig,  TrainingConfig, \
     DeepLearningConfig, CryptonalysisConfigGrid
@@ -304,8 +305,10 @@ def save_deep_learning_results(model_dict, crypto, preprocessing_config, trainin
     if not os.path.exists(RESULTS_DIR):
         os.mkdir(RESULTS_DIR)
 
+    plat = platform.system().lower()
+
     # Human-readable
-    hr_file_name = "results_dl_{}.txt".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
+    hr_file_name = "results_dl_{}_{}.txt".format(plat, datetime.strftime(datetime.now(), '%Y-%m-%d'))
     logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, hr_file_name)))
     with open(os.path.join(RESULTS_DIR, hr_file_name), 'a') as f:
         f.write(crypto + '\n')
@@ -316,7 +319,7 @@ def save_deep_learning_results(model_dict, crypto, preprocessing_config, trainin
         f.write('\n**************************************************************\n')
 
     # CSV
-    csv_file_name = "results_dl_{}.csv".format(datetime.strftime(datetime.now(), '%Y-%m-%d'))
+    csv_file_name = "results_dl_{}_{}.csv".format(plat, datetime.strftime(datetime.now(), '%Y-%m-%d'))
     logger.info("Saving results to {}...".format(os.path.join(RESULTS_DIR, csv_file_name)))
     metrics = sorted(model_dict['metrics'].keys())
     metrics_header = ','.join(["LSTM_{}".format(m) for m in metrics])
