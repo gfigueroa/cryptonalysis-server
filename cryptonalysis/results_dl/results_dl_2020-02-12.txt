@@ -1,0 +1,1830 @@
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.46875, 'loss': 0.5368464489777883}, 'model': <keras.engine.sequential.Sequential object at 0x1202f0610>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 3, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.4798657718120805, 'loss': 0.5201340945775077}, 'model': <keras.engine.sequential.Sequential object at 0x12330b7d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5234899328859061, 'loss': 0.4790563869396312}, 'model': <keras.engine.sequential.Sequential object at 0x122583990>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.50625, 'loss': 0.49375}, 'model': <keras.engine.sequential.Sequential object at 0x125cbb250>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.4731543632161697, 'loss': 0.5268456377839082}, 'model': <keras.engine.sequential.Sequential object at 0x122f781d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.5083333333333333, 'loss': 0.48592978914578755}, 'model': <keras.engine.sequential.Sequential object at 0x1263caf90>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5958333333333333, 'loss': 0.404246461391449}, 'model': <keras.engine.sequential.Sequential object at 0x123dfd410>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.5167785234899329, 'loss': 0.48322147651006714}, 'model': <keras.engine.sequential.Sequential object at 0x1268910d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.4979166666666667, 'loss': 0.503950051466624}, 'model': <keras.engine.sequential.Sequential object at 0x123ecf390>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.4731543632161697, 'loss': 0.5268456377839082}, 'model': <keras.engine.sequential.Sequential object at 0x1279ffdd0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5134228179918839, 'loss': 0.4865771812580576}, 'model': <keras.engine.sequential.Sequential object at 0x125143d90>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.5604166666666667, 'loss': 0.44078894654909767}, 'model': <keras.engine.sequential.Sequential object at 0x1281c7d90>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.47315436241610737, 'loss': 0.5268452663549641}, 'model': <keras.engine.sequential.Sequential object at 0x12587e1d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.48125, 'loss': 0.5161068379878998}, 'model': <keras.engine.sequential.Sequential object at 0x128aa5510>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.50625, 'loss': 0.49375089605649314}, 'model': <keras.engine.sequential.Sequential object at 0x125fda910>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.496644295502029, 'loss': 0.5006693861628538}, 'model': <keras.engine.sequential.Sequential object at 0x1294f1c10>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.4791666666666667, 'loss': 0.5208333333333334}, 'model': <keras.engine.sequential.Sequential object at 0x126852590>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.47315436241610737, 'loss': 0.5268456375838926}, 'model': <keras.engine.sequential.Sequential object at 0x129e11490>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5402684571759012, 'loss': 0.46162785139659906}, 'model': <keras.engine.sequential.Sequential object at 0x127331210>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.5333333333333333, 'loss': 0.46817370851834617}, 'model': <keras.engine.sequential.Sequential object at 0x12a6e2f50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.4731543632161697, 'loss': 0.5268456377839082}, 'model': <keras.engine.sequential.Sequential object at 0x127a81350>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.4791666666666667, 'loss': 0.5208332717418671}, 'model': <keras.engine.sequential.Sequential object at 0x12974df50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5208333333333334, 'loss': 0.4770399808883667}, 'model': <keras.engine.sequential.Sequential object at 0x1286ce550>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.5, 'loss': 0.4999999679975062}, 'model': <keras.engine.sequential.Sequential object at 0x12bb20650>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.4791666666666667, 'loss': 0.5208319584528606}, 'model': <keras.engine.sequential.Sequential object at 0x1291e9350>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.45973154382417664, 'loss': 0.5383499172709932}, 'model': <keras.engine.sequential.Sequential object at 0x12c6f8e50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5134228189919618, 'loss': 0.48859939239169126}, 'model': <keras.engine.sequential.Sequential object at 0x129e6d7d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.525, 'loss': 0.4760688106218974}, 'model': <keras.engine.sequential.Sequential object at 0x12d2bfb50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5067114093959731, 'loss': 0.5157978212673392}, 'model': <keras.engine.sequential.Sequential object at 0x1292f8490>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.4791666666666667, 'loss': 0.5208333333333334}, 'model': <keras.engine.sequential.Sequential object at 0x12d8ade50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.529045643153527, 'loss': 0.4760120606274031}, 'model': <keras.engine.sequential.Sequential object at 0x12ad81e50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.5234899336859684, 'loss': 0.47651006731410955}, 'model': <keras.engine.sequential.Sequential object at 0x12e487590>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x12b5ab150>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": true, 
+  "predictor_params": {
+    "lookahead_days": 4, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.44966442953020136, 'loss': 0.5289847994810782}, 'model': <keras.engine.sequential.Sequential object at 0x12ee92990>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5083612044120712, 'loss': 0.4916387955879288}, 'model': <keras.engine.sequential.Sequential object at 0x12c155e50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.4854771784232365, 'loss': 0.5145228215767634}, 'model': <keras.engine.sequential.Sequential object at 0x12f78dd90>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.47826087036260395, 'loss': 0.5217391307338025}, 'model': <keras.engine.sequential.Sequential object at 0x12c7e4650>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x12ffce810>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.4854771784232365, 'loss': 0.5145228215767634}, 'model': <keras.engine.sequential.Sequential object at 0x12ced5e90>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.44481605391039897, 'loss': 0.5551839460896011}, 'model': <keras.engine.sequential.Sequential object at 0x130a953d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x12d6ed110>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.47826087036260395, 'loss': 0.5217391307338025}, 'model': <keras.engine.sequential.Sequential object at 0x12ffe7410>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5083612036146846, 'loss': 0.4916387963853153}, 'model': <keras.engine.sequential.Sequential object at 0x12e391950>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.4730290456431535, 'loss': 0.5269709543591765}, 'model': <keras.engine.sequential.Sequential object at 0x131c3c9d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.47826087036260395, 'loss': 0.5217391307338025}, 'model': <keras.engine.sequential.Sequential object at 0x12ea522d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x132521f50>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.504149377593361, 'loss': 0.49585064590224587}, 'model': <keras.engine.sequential.Sequential object at 0x12f0faf90>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.49163879648498865, 'loss': 0.5083612046114179}, 'model': <keras.engine.sequential.Sequential object at 0x132bafb10>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x12f900090>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": true, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.47826087036260395, 'loss': 0.5217391307338025}, 'model': <keras.engine.sequential.Sequential object at 0x1330d0310>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.5050167229063933, 'loss': 0.49498327819001314}, 'model': <keras.engine.sequential.Sequential object at 0x1306411d0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.4896265560165975, 'loss': 0.5103732738257444}, 'model': <keras.engine.sequential.Sequential object at 0x133fb0fd0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.47826087036260395, 'loss': 0.5217391307338025}, 'model': <keras.engine.sequential.Sequential object at 0x130ea3910>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x1256fc410>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x130c15050>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.5117056860174224, 'loss': 0.4882943139825776}, 'model': <keras.engine.sequential.Sequential object at 0x13468a610>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.48132780082987553, 'loss': 0.5186721991701245}, 'model': <keras.engine.sequential.Sequential object at 0x131d78890>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictor", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.47826087036260395, 'loss': 0.5217391307338025}, 'model': <keras.engine.sequential.Sequential object at 0x135f2fbd0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.4916387955879288, 'loss': 0.5083612044120712}, 'model': <keras.engine.sequential.Sequential object at 0x131efc990>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2017-01-01"
+}
+{
+  "shuffle_data": true, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 80
+}
+{'metrics': {'acc': 0.47925311203319504, 'loss': 0.5207468879686592}, 'model': <keras.engine.sequential.Sequential object at 0x1364faed0>}
+
+**************************************************************
+ETH
+{
+  "normalize": true, 
+  "window_size": 40, 
+  "standardize": false, 
+  "predictor_params": {
+    "lookahead_days": 1, 
+    "prob_sell": 1, 
+    "starting_investment": 100, 
+    "prob_buy": 1, 
+    "daily_allowance": 5
+  }, 
+  "end_date": "2019-09-30", 
+  "price_column": "Close", 
+  "normalize_by_row": false, 
+  "predictor_cls": "BiffPredictorSmart", 
+  "start_date": "2018-01-01"
+}
+{
+  "shuffle_data": false, 
+  "dev_size": 0.5, 
+  "training_size": 0.7, 
+  "cv_folds": 4
+}
+{
+  "neurons": 60
+}
+{'metrics': {'acc': 0.47826087036260395, 'loss': 0.5217391307338025}, 'model': <keras.engine.sequential.Sequential object at 0x132e6c510>}
+
+**************************************************************
