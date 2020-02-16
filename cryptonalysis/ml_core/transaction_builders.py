@@ -372,7 +372,7 @@ class CryptoPredictor(object):
             logger.debug("Day {0} - {1}".format(day + 1, self._price_list.index[stop_day]))
             current_price = float(self._price_list[stop_day - 1])
             t = transactions[day]
-            if type(t) is int:
+            if type(t) is int or type(t) is long:
                 transaction = get_transaction_type(t)
             elif type(t) is str:
                 transaction = t
