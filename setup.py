@@ -13,7 +13,7 @@ with open('requirements.testing.txt') as f:
 
 setup(
     name='cryptonalysis_server',
-    version='0.1.2.dev0',
+    version='0.1.2.dev1',
     packages=['cryptonalysis'],
     include_package_data=True,
     license='',
