@@ -166,7 +166,7 @@ def run_deep_learning_pipeline(crypto_name, split_dfs, deep_learning_config):
 
     # Train model on data
     logger.info("Training model on data...")
-    model.fit(training_inputs, training_outputs, epochs=100, batch_size=1, verbose=2, shuffle=True)
+    model.fit(training_inputs, training_outputs, epochs=100, verbose=2, shuffle=True)
 
     # Evaluate model
     metric_values = model.evaluate(test_inputs, test_outputs, verbose=2)
