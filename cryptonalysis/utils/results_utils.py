@@ -44,4 +44,17 @@ def merge_results(results_dir=None):
 
 
 if __name__ == '__main__':
-    merge_results()
+    print "Merge results"
+    print "1. Merge regular training results"
+    print "2. Merge deep learning results"
+    option = raw_input("Enter your option: ")
+    if option == 1:
+        d = RESULTS_DIR
+    elif option == 2:
+        d = os.path.join('cryptonalysis', 'results_dl')
+    else:
+        print "Wrong option!"
+        d = None
+        exit(1)
+
+    merge_results(d)
