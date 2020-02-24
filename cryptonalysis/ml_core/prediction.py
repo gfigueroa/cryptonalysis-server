@@ -260,11 +260,11 @@ def run_multiple_simulations(conf_path):
             max_roi_perc_mlp = mlp_roi_perc
             max_roi_perc_conf_mlp = conf_file
 
-    logger.info("Max roi svc: {}, conf: {}".format(max_roi_svc, max_roi_conf_svc))
-    logger.info("Max roi % svc: {}, conf: {}".format(max_roi_perc_svc, max_roi_perc_conf_svc))
+    logger.info("Max roi svc: ${}, conf: {}".format(round(max_roi_svc, 2), max_roi_conf_svc))
+    logger.info("Max roi % svc: {}%, conf: {}".format(round(max_roi_perc_svc, 4) * 100, max_roi_perc_conf_svc))
 
-    logger.info("Max roi mlp: {}, conf: {}".format(max_roi_mlp, max_roi_conf_mlp))
-    logger.info("Max roi % mlp: {}, conf: {}".format(max_roi_perc_mlp, max_roi_perc_conf_mlp))
+    logger.info("Max roi mlp: ${}, conf: {}".format(round(max_roi_mlp, 2), max_roi_conf_mlp))
+    logger.info("Max roi % mlp: {}%, conf: {}".format(round(max_roi_perc_mlp, 4) * 100, max_roi_perc_conf_mlp))
 
 
 if __name__ == '__main__':
