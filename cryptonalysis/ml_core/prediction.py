@@ -239,6 +239,7 @@ def run_multiple_simulations(conf_path):
     max_roi_perc_mlp = 0
     max_roi_perc_conf_mlp = None
     for conf_file in config_files:
+        logger.info("Running simulation for config file '{}'".format(conf_file))
         conf = load_cryptonalysis_config(config_path, conf_file)
         results = run_prediction_simulation(conf)
 
