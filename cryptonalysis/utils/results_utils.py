@@ -26,6 +26,8 @@ def merge_results(results_dir=None):
     header = None
     with open(merged_csv_path, 'w') as merged_csv:
         for results_csv_path in results_csv_paths:
+            if 'merged' in results_csv_path:
+                continue
             with open(results_csv_path, 'r') as results_csv:
                 for i, line in enumerate(results_csv.readlines()):
                     if not line.strip():  # Ignore empty lines
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     print "Merge results"
     print "1. Merge regular training results"
     print "2. Merge deep learning results"
-    option = raw_input("Enter your option: ")
+    option = int(raw_input("Enter your option: "))
     if option == 1:
         d = RESULTS_DIR
     elif option == 2:

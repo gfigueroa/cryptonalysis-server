@@ -350,8 +350,8 @@ class CryptoPredictor(object):
         :type daily_allowance: float
         """
 
-        starting_investment = starting_investment or self.starting_investment
-        daily_allowance = daily_allowance or self.daily_allowance
+        starting_investment = starting_investment if starting_investment is not None else self.starting_investment
+        daily_allowance = daily_allowance if daily_allowance is not None else self.daily_allowance
         self.reset_predictor_state(starting_investment)
 
         logger.info("Start date: {0}".format(self._starting_date))

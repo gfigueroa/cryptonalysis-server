@@ -1,8 +1,10 @@
 import logging
 import pandas as pd
+import os
 from cryptonalysis.ml_core.preprocessing import CRYPTOCURRENCIES
 from datetime import date, timedelta
 from misc_utils import parse_date
+from cryptonalysis.ml_core.preprocessing import MASTER_DATA_DIR, get_historical_df
 
 
 # Logging
@@ -10,7 +12,7 @@ logger = logging.getLogger()
 
 API_URLS = {
     crypto_short: "https://coinmarketcap.com/currencies/{}/historical-data/".format(crypto_long)
-    for crypto_short, crypto_long in CRYPTOCURRENCIES.items()
+    for crypto_short, crypto_long in map(lambda (k, v): (k, v) if k != 'XRP' else (k, k), CRYPTOCURRENCIES.items())
 }
 
 
@@ -93,8 +95,38 @@ def get_crypto_data_for_date(crypto_name, for_date, window_size):
     return crypto_data
 
 
+def update_new_data(crypto_name, end_date):
+    """
+    Automatically fetch and update the new_CRYPTO.csv files with new data up to the given `end_date`.
+    :param crypto_name
+    :type crypto_name: str
+    :param end_date
+    :type end_date: date
+    :return:
+    """
+    current_date = parse_date('today')
+    if end_date >= current_date:
+        raise ValueError('end_date must be before today!')
+
+    data_file = os.path.join(MASTER_DATA_DIR, "new_{}.csv".format(CRYPTOCURRENCIES[crypto_name]))
+    df = get_historical_df(data_file)
+    last_date = df.index[-1].date()
+    if last_date >= end_date:
+        logger.info("New data is already updated, skipping...")
+        return
+
+    logger.info("Updating new {} data for {}...".format(crypto_name, end_date))
+
+    start_date = last_date + timedelta(1)
+    new_df = fetch_crypto_data(crypto_name, start_date, end_date)
+    updated_df = pd.concat([df, new_df])
+    updated_df.to_csv(data_file, index=True, index_label='Date', sep='\t')
+
+    return updated_df
+
+
 if __name__ == '__main__':
-    crypto = 'ETH'
-    today = parse_date('today')
-    data = get_crypto_data_for_date(crypto, today, 50)
-    print data
+    # Update new data
+    for crypto in CRYPTOCURRENCIES.keys():
+        yesterday = parse_date('yesterday')
+        update_new_data(crypto, yesterday)

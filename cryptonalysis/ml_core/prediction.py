@@ -19,8 +19,8 @@ from sklearn.metrics import classification_report, accuracy_score
 logger = logging.getLogger()
 
 # Constants
-STARTING_INVESTMENT = None
-DAILY_ALLOWANCE = None
+STARTING_INVESTMENT = 100
+DAILY_ALLOWANCE = 5
 
 
 def split_dataset(df):

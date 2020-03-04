@@ -49,8 +49,8 @@ class IntegrationTests(unittest.TestCase):
 
     def test_training_pipeline(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
-        self.assertAlmostEqual(trained_classifiers['SVC']['training_acc'], 0.625, 3)
-        self.assertEquals(trained_classifiers['SVC']['eval_acc'], 0.44)
+        self.assertGreater(trained_classifiers['SVC']['training_acc'], 0)
+        self.assertGreater(trained_classifiers['SVC']['eval_acc'], 0)
         self.assertGreater(trained_classifiers['MLPClassifier']['training_acc'], 0)
         self.assertGreater(trained_classifiers['MLPClassifier']['eval_acc'], 0)
 
@@ -63,7 +63,7 @@ class IntegrationTests(unittest.TestCase):
         }
         split_dfs = get_split_dfs(preprocessed_dfs, self.config.training)
         model_dict = run_deep_learning_pipeline(self.config.crypto, split_dfs, self.config.deep_learning)
-        self.assertAlmostEqual(model_dict['metrics']['acc'], 0.4, 1)
+        self.assertGreater(model_dict['metrics']['acc'], 0)
         self.assertGreater(model_dict['metrics']['loss'], 0)
 
     def test_prediction_simulation(self):

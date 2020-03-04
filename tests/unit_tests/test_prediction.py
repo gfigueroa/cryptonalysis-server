@@ -81,7 +81,7 @@ class TestPredictionFunctions(unittest.TestCase):
     def test_predict_for_date(self):
         expected_predictions = {
             'SVC': 'SELL',
-            'MLPClassifier': 'BUY'
+            'MLPClassifier': 'SELL'
         }
         predictions = predict_for_date(CRYPTO_NAME, PREPROCESSING_CONFIG, TRAINING_CONFIG, FOR_DATE, RES_DIR, RES_DIR)
         predictions = {k: get_transaction_type(v.iloc[0]) for k, v in predictions.items()}
