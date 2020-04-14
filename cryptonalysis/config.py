@@ -162,6 +162,7 @@ class DeepLearningConfig(Config):
 
     # Default values
     NEURONS = 30  # Number of neurons used to build NN model
+    ACTIVATION_FUNCTION = 'sigmoid'  # e.g. 'sigmoid', 'relu', 'tanh'
 
     def __init__(self, deep_learning_config_dict):
         """
@@ -173,6 +174,10 @@ class DeepLearningConfig(Config):
 
         self.neurons = deep_learning_config_dict['neurons'] = deep_learning_config_dict['neurons'] \
             if 'neurons' in deep_learning_config_dict else DeepLearningConfig.NEURONS
+
+        self.activation_function = deep_learning_config_dict['activation_function'] = \
+            deep_learning_config_dict['activation_function'] \
+            if 'activation_function' in deep_learning_config_dict else DeepLearningConfig.ACTIVATION_FUNCTION
 
         self.config_dict = deep_learning_config_dict
 

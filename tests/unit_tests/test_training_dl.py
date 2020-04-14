@@ -60,8 +60,10 @@ TRAINING_CONFIG = TrainingConfig({
 
 # Deep Learning constants for tests
 NEURONS = 10
+ACTIVATION_FUNCTION = 'sigmoid'
 DEEP_LEARNING_CONFIG = DeepLearningConfig({
-    'neurons': NEURONS
+    'neurons': NEURONS,
+    'activation_function': ACTIVATION_FUNCTION
 })
 
 
@@ -146,7 +148,7 @@ class TestDeepLearningFunctions(unittest.TestCase):
 
         # Build model
         model = build_model(input_shape=(training_inputs.shape[1], training_inputs.shape[2]), output_size=1,
-                            neurons=NEURONS)
+                            neurons=NEURONS, activation_func=ACTIVATION_FUNCTION)
         self.assertEqual(model.input_shape, (None, 5, 4))
 
         # Fit model
@@ -168,7 +170,7 @@ class TestDeepLearningFunctions(unittest.TestCase):
 
         # Build model
         model = build_model(input_shape=(training_inputs.shape[1], training_inputs.shape[2]), output_size=1,
-                            neurons=NEURONS)
+                            neurons=NEURONS, activation_func=ACTIVATION_FUNCTION)
 
         # Fit model
         model.fit(training_inputs, training_outputs, epochs=10, batch_size=1, verbose=1, shuffle=True)

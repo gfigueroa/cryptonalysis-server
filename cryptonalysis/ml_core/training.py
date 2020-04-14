@@ -76,7 +76,7 @@ def split_datasets(df, shuffle, training_size=0.7, dev_size=0.5, shuffled_indice
             y = shuffled_df['transaction']
 
             # Used for Grid Search CV
-            X_dev, X_eval, y_dev, y_eval = train_test_split(X, y, test_size=dev_size)
+            X_dev, X_eval, y_dev, y_eval = train_test_split(X, y, test_size=1-dev_size)
     else:
         # Used for non-CV
         training_data = df[:int(len(df) * training_size)]

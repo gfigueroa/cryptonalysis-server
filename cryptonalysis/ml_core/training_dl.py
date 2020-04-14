@@ -105,8 +105,7 @@ def build_deep_learning_datasets(split_dfs, crypto_name):
     return training_inputs, training_outputs, test_inputs, test_outputs
 
 
-def build_model(input_shape, output_size, neurons, activation_func="sigmoid",
-                dropout=0.25, loss="mae", optimizer="adam"):
+def build_model(input_shape, output_size, neurons, activation_func, dropout=0.25, loss="mae", optimizer="adam"):
     """
     Compile a Sequential Keras deep learning model given a set of parameters.
     The model has an LSTM layer.
@@ -116,7 +115,7 @@ def build_model(input_shape, output_size, neurons, activation_func="sigmoid",
     :type output_size: int
     :param neurons: The number of neurons in the LSTM layer
     :type neurons: int
-    :param activation_func: The activation function name (such as 'sigmoid').
+    :param activation_func: The activation function name (such as 'sigmoid', 'relu', or 'tanh').
     :type activation_func: str
     :param dropout: The dropout value to reduce overfitting and improve generalization
     :type dropout: float
@@ -163,11 +162,11 @@ def run_deep_learning_pipeline(crypto_name, split_dfs, deep_learning_config):
     # Initialize model architecture
     logger.info("Initializing model architecture...")
     model = build_model(input_shape=(training_inputs.shape[1], training_inputs.shape[2]), output_size=1,
-                        neurons=deep_learning_config.neurons)
+                        neurons=deep_learning_config.neurons, activation_func=deep_learning_config.activation_function)
 
     # Train model on data
     logger.info("Training model on data...")
-    model.fit(training_inputs, training_outputs, epochs=100, verbose=2, shuffle=True)
+    model.fit(training_inputs, training_outputs, epochs=100, verbose=2, shuffle=False)
 
     # Evaluate model
     metric_values = model.evaluate(test_inputs, test_outputs, verbose=2)
@@ -216,7 +215,7 @@ def _get_dl_run_name(crypto, preprocessing_config, training_config, deep_learnin
     ...     }
     ...     )
     ... )
-    'LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7_10'
+    'LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7_sigmoid10'
 
     :param crypto: The crypto name
     :type crypto: str
@@ -264,11 +263,12 @@ def get_model_name(crypto, preprocessing_config, training_config, deep_learning_
     ...     }),
     ...     DeepLearningConfig(
     ...     {
-    ...         'neurons': 10
+    ...         'neurons': 10,
+    ...         'activation_function': 'sigmoid'
     ...     }
     ...     )
     ... )
-    'LSTM_LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7_10.h5'
+    'LSTM_LTC_2019-05-04TrueTrueBiffPredictor5311100CloseFalse2018-01-0160_40.5True0.7_sigmoid10.h5'
 
     :param crypto: The crypto name
     :type crypto: str
