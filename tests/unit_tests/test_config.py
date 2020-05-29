@@ -8,6 +8,7 @@ from cryptonalysis.utils.misc_utils import all_elements_unique
 
 RES_DIR = 'tests/resources'
 CONFIG_TEST = 'config_test.conf'
+CONFIG_DL_TEST = 'config_dl_test.conf'
 CONFIG_GRID_TEST = 'config_grid_test.conf'
 
 
@@ -16,12 +17,12 @@ class TestConfig(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestConfig, self).__init__(*args, **kwargs)
         self.config = load_cryptonalysis_config(RES_DIR, CONFIG_TEST)
+        self.config_dl = load_cryptonalysis_config(RES_DIR, CONFIG_DL_TEST)
         self.config_grid = load_cryptonalysis_config_grid(RES_DIR, CONFIG_GRID_TEST)
 
     def test_config(self):
         pc = self.config.preprocessing
         tc = self.config.training
-        dlc = self.config.deep_learning
 
         # Test single-line and csv string representations
         pc_s = pc.to_single_line_str()
@@ -39,6 +40,11 @@ class TestConfig(unittest.TestCase):
         tc_csv = tc.to_csv_str()
         self.assertEqual(tc_csv[0], u'cv_folds,dev_size,shuffle_data,training_size')
         self.assertEqual(tc_csv[1], '4,0.5,True,0.7')
+
+    def test_config_dl(self):
+        dlc = self.config_dl.deep_learning
+
+        # Test single-line and csv string representations
 
         dlc_s = dlc.to_single_line_str()
         self.assertEqual(dlc_s, 'sigmoid10')

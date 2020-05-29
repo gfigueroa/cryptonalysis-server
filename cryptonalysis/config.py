@@ -193,7 +193,7 @@ class CryptonalysisConfig(Config):
 
     PREPROCESSING_CONFIG = PreprocessingConfig({})
     TRAINING_CONFIG = TrainingConfig({})
-    DEEP_LEARNING_CONFIG = DeepLearningConfig({})
+    DEEP_LEARNING_CONFIG = None
 
     def __init__(self, cryptonalysis_config_dict):
         """
@@ -232,7 +232,7 @@ class CryptonalysisConfig(Config):
 
         self.deep_learning = DeepLearningConfig(cryptonalysis_config_dict['deep_learning']) \
             if 'deep_learning' in cryptonalysis_config_dict else CryptonalysisConfig.DEEP_LEARNING_CONFIG
-        cryptonalysis_config_dict['deep_learning'] = self.deep_learning.config_dict
+        cryptonalysis_config_dict['deep_learning'] = self.deep_learning.config_dict if self.deep_learning else None
 
         self.config_dict = cryptonalysis_config_dict
 
