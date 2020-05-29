@@ -12,16 +12,18 @@ from cryptonalysis.ml_core.prediction import run_prediction_simulation, predict_
 from cryptonalysis.ml_core.preprocessing import run_preprocessing_pipeline, CRYPTOCURRENCIES
 from cryptonalysis.ml_core.training import run_training_pipeline
 from cryptonalysis.ml_core.training_dl import get_split_dfs, run_deep_learning_pipeline
-from datetime import date, timedelta
+from datetime import timedelta
 
 RES_DIR = os.path.join('tests', 'resources')
 CONFIG_TEST = 'config_test.conf'
+CONFIG_DL_TEST = 'config_dl_test.conf'
 
 
 class IntegrationTests(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(IntegrationTests, self).__init__(*args, **kwargs)
         self.config = load_cryptonalysis_config(RES_DIR, CONFIG_TEST)
+        self.config_dl = load_cryptonalysis_config(RES_DIR, CONFIG_DL_TEST)
 
         # Always have the same random arrangements
         random.seed(1)
@@ -56,13 +58,13 @@ class IntegrationTests(unittest.TestCase):
 
     def test_deep_learning_pipeline(self):
         preprocessed_dfs = {
-            crypto_name: run_preprocessing_pipeline(crypto_name, self.config.preprocessing, False, False,
+            crypto_name: run_preprocessing_pipeline(crypto_name, self.config_dl.preprocessing, False, False,
                                                     master_data_dir=RES_DIR, preprocessed_data_dir=RES_DIR,
                                                     scaler_dir=RES_DIR)
             for crypto_name in CRYPTOCURRENCIES
         }
-        split_dfs = get_split_dfs(preprocessed_dfs, self.config.training)
-        model_dict = run_deep_learning_pipeline(self.config.crypto, split_dfs, self.config.deep_learning)
+        split_dfs = get_split_dfs(preprocessed_dfs, self.config_dl.training)
+        model_dict = run_deep_learning_pipeline(self.config_dl.crypto, split_dfs, self.config_dl.deep_learning)
         self.assertGreater(model_dict['metrics']['acc'], 0)
         self.assertGreater(model_dict['metrics']['loss'], 0)
 
@@ -72,7 +74,6 @@ class IntegrationTests(unittest.TestCase):
         self.assertAlmostEqual(results['MLPClassifier']['cash'], 200, 0)
         self.assertEquals(results['MLPClassifier']['owned_crypto'], 0)
         self.assertEquals(results['MLPClassifier']['total_investment'], 200)
-        self.assertEquals(results['predictor'].ending_date, date(2019, 9, 30))
 
     def test_prediction_simulation_vs_predict_for_date(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
@@ -89,7 +90,7 @@ class IntegrationTests(unittest.TestCase):
             dt = list(simulation_predictions.index)[i].date()
             simulation_prediction = simulation_predictions.iloc[i]
             date_prediction = predict_for_date(self.config.crypto, self.config.preprocessing, self.config.training,
-                                               dt + timedelta(days=1), scaler_dir=RES_DIR,
+                                               None, dt + timedelta(days=1), scaler_dir=RES_DIR,
                                                models=trained_classifiers)
             self.assertEqual(list(date_prediction['SVC'].index)[0].date(), dt)
             self.assertEqual(date_prediction['SVC'].iloc[0], simulation_prediction)
@@ -105,7 +106,7 @@ class IntegrationTests(unittest.TestCase):
             dt = list(simulation_predictions.index)[i].date()
             simulation_prediction = simulation_predictions.iloc[i]
             date_prediction = predict_for_date(self.config.crypto, self.config.preprocessing, self.config.training,
-                                               dt + timedelta(days=1), scaler_dir=RES_DIR,
+                                               None, dt + timedelta(days=1), scaler_dir=RES_DIR,
                                                models=trained_classifiers)
             self.assertEqual(list(date_prediction['MLPClassifier'].index)[0].date(), dt)
             self.assertEqual(date_prediction['MLPClassifier'].iloc[0], simulation_prediction)

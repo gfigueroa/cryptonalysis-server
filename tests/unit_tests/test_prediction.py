@@ -83,6 +83,7 @@ class TestPredictionFunctions(unittest.TestCase):
             'SVC': 'SELL',
             'MLPClassifier': 'BUY'
         }
-        predictions = predict_for_date(CRYPTO_NAME, PREPROCESSING_CONFIG, TRAINING_CONFIG, FOR_DATE, RES_DIR, RES_DIR)
+        predictions = predict_for_date(CRYPTO_NAME, PREPROCESSING_CONFIG, TRAINING_CONFIG, None, FOR_DATE, RES_DIR,
+                                       RES_DIR)
         predictions = {k: get_transaction_type(v.iloc[0]) for k, v in predictions.items()}
         self.assertDictEqual(predictions, expected_predictions)
