@@ -9,6 +9,7 @@ from cryptonalysis.ml_core.preprocessing import MASTER_DATA_DIR, get_historical_
 
 # Logging
 logger = logging.getLogger()
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 API_URLS = {
     crypto_short: "https://coinmarketcap.com/currencies/{}/historical-data/".format(crypto_long)

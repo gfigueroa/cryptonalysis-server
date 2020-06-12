@@ -8,9 +8,10 @@ from cryptonalysis.config import load_cryptonalysis_config, CryptonalysisConfig,
 from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from cryptonalysis.utils.misc_utils import parse_date
 from market import market
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, DatetimeIndex
 from preprocessing import get_historical_df, get_price_list, preprocess_dataframe, preprocess_data_point, \
     CRYPTOCURRENCIES, MASTER_DATA_DIR
+from transaction_builders import CryptoPredictor
 from training import load_model
 from training_dl import load_deep_learning_model
 from transaction_builders import get_transaction_type
@@ -27,6 +28,12 @@ DAILY_ALLOWANCE = 5
 
 
 def get_simple_model_name(model):
+    """
+    Get a short model name from a model instance.
+    :param model: An instance of a model
+    :return: A short model name
+    :rtype: str
+    """
     if isinstance(model, GridSearchCV):
         model_name = model.estimator.__class__.__name__
     else:
@@ -104,6 +111,15 @@ def build_deep_learning_datasets(split_dfs, crypto_name):
 
 
 def run_transactions(predictor, y_pred):
+    """
+    Run a list of predicted transactions on a predictor.
+    :param predictor: a CryptoPredictor on which to run a simulation for a list of predicted transactions.
+    :type predictor: CryptoPredictor
+    :param y_pred: predicted transactions
+    :rtype: Series
+    :return: a dictionary with prediction results
+    :rtype: dict
+    """
     predictor.run_transaction_simulation(y_pred.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
     cash = predictor.cash
     total_investment = predictor.total_investment
@@ -112,11 +128,25 @@ def run_transactions(predictor, y_pred):
         'cash': cash,
         'total_investment': total_investment,
         'owned_crypto': owned_crypto,
-        'y_pred': y_pred
+        'y_pred': y_pred,
+        'predictor_states': predictor.predictor_states
     }
 
 
 def predict_labeled_data(model, X, y, index):
+    """
+    Make a prediction on X and cross-check it against already labeled data y. An index is provided for maintaining the
+    same index.
+    :param model: an instance of a prediction model
+    :param X: attributes for prediction
+    :type X: DataFrame
+    :param y: labeled ground-truth data
+    :type y: Series or np.ndarray
+    :param index: a DatetimeIndex to clip to the newly predicted data
+    :type index: DatetimeIndex
+    :return: a tuple containing the newly predicted data and the accuracy
+    :rtype: tuple
+    """
     logger.info("Evaluation results for {} model:".format(get_simple_model_name(model)))
     preds = [0 if y_i < 0.5 else 1 for y_i in model.predict(X)]
     y_true, y_pred = y, Series(preds, index)
@@ -191,8 +221,7 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
             preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
                                                      predicting=True, scaler_dir=scaler_dir)
     except Exception as e:
-        logger.error("Error in preprocessing for prediction!")
-        logger.error(e.message)
+        logger.error("Error in preprocessing for prediction!", exc_info=e)
         raise e
 
     # Transaction simulation for model predictions and ROI
@@ -262,8 +291,7 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
         logger.info("Prediction simulation complete!\n")
         return results
     except Exception as e:
-        logger.error("Error in prediction simulation!")
-        logger.error(e.message)
+        logger.error("Error in prediction simulation!", exc_info=e)
         raise e
 
 
@@ -369,12 +397,13 @@ def predict_for_date(crypto_name, preprocessing_config, training_config, deep_le
 
 
 def run_multiple_simulations(conf_path):
+    logger.info("Running multiple simulations...")
     config_files = filter(lambda c: c.startswith('training_best') or c.startswith('training_dl_best'),
                           os.listdir(conf_path))
     max_roi = {}
     max_acc = {}
     for conf_file in config_files:
-        logger.info("Running simulation for config file '{}'".format(conf_file))
+        logger.info("Running simulation for config file '{}'...".format(conf_file))
         conf = load_cryptonalysis_config(config_path, conf_file)
         results = run_prediction_simulation(conf)
 
@@ -424,6 +453,7 @@ if __name__ == '__main__':
     config_path = 'config'
 
     if action == 'multi_simulations':
+        logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))  # Necessary for initial logs
         run_multiple_simulations(config_path)
     else:
         if len(sys.argv) < 3:

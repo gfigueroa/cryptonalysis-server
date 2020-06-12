@@ -1,10 +1,11 @@
 import logging
 import os
+import pandas as pd
 import random
 from abc import ABCMeta, abstractmethod
 from datetime import date
 from market import MarketParameters
-from pandas import Series
+from pandas import DataFrame, Series, Timestamp
 
 # Logging
 logger = logging.getLogger()
@@ -94,6 +95,10 @@ class CryptoPredictor(object):
         self.cash = 0
         self.owned_crypto = 0
         self.transactions = []
+        index = pd.date_range(starting_date, periods=1, freq='D')
+        self.predictor_states = DataFrame(data=None, columns=['cash', 'owned_crypto', 'capital', 'total_investment',
+                                                              'roi', 'roi_perc'],
+                                          index=index)
 
         self.market = market
         self._starting_date = starting_date
@@ -139,6 +144,23 @@ class CryptoPredictor(object):
         self.cash = starting_investment
         self.owned_crypto = 0
         self.transactions = []
+        self.predictor_states = self.predictor_states.iloc[0:0]
+
+    def update_predictor_states(self, transaction_date, current_price, buy):
+        """
+        Update the predictor_states DataFrame after a buy/sell transaction.
+        :param transaction_date: The transaction date
+        :type transaction_date: Timestamp
+        :param current_price: The current crypto price
+        :type current_price: float
+        :param buy: Whether the transaction performed was BUY (True) or SELL (False)
+        :type buy: bool
+        """
+        capital = self.get_current_crypto_value(current_price) if buy else self.cash
+        roi = capital - self.total_investment
+        roi_perc = roi / self.total_investment
+        self.predictor_states.loc[transaction_date] = [self.cash, self.owned_crypto, capital, self.total_investment,
+                                                       roi, roi_perc]
 
     def get_transaction_tuple(self, prices, current_price, future_prices):
         """
@@ -211,6 +233,17 @@ class CryptoPredictor(object):
 
         return crypto_amount
 
+    def get_current_crypto_value(self, current_price):
+        """
+        Get current value of owned crypto based on a given current price and a transaction fee.
+        :param current_price: The current crypto price to take into account.
+        :type current_price: float
+        :return: the value of the owned crypto
+        :rtype: float
+        """
+        return (self.owned_crypto * current_price) - \
+               (self.owned_crypto * current_price * self.market.transaction_fee_perc)
+
     def buy(self, current_price):
         """
         Simulates a BUY transaction given the current crypto price.
@@ -243,21 +276,31 @@ class CryptoPredictor(object):
         """
         Get the fiat amount of a transaction to perform.
         :param buy: True if buying, False if selling
+        :type buy: bool
         :param crypto_amount: The amount of crypto to buy/sell
+        :type crypto_amount: float
         :param current_price: The current price (in fiat) of the cryptocurrency
+        :type current_price: float
         :return The fiat amount (e.g. USD) of a transaction.
+        :rtype: float
         """
         if buy:
             return (crypto_amount * current_price) + (crypto_amount * current_price * self.market.transaction_fee_perc)
         else:
             return (crypto_amount * current_price) - (crypto_amount * current_price * self.market.transaction_fee_perc)
 
-    def perform_transaction(self, buy, crypto_amount, current_price):
+    def perform_transaction(self, buy, crypto_amount, current_price, transaction_date=None):
         """
-        Perform a cryptocurrency transaction.
+        Perform a cryptocurrency transaction. The transaction either buys all crypto possible with the available cash,
+        or sells all crypto available.
         :param buy: True if buying, False if selling
+        :type buy: bool
         :param crypto_amount: The amount of crypto to buy/sell
+        :type crypto_amount: float
         :param current_price: The current price (in fiat) of the cryptocurrency
+        :type current_price: float
+        :param transaction_date: The date when this transaction is being performed
+        :type transaction_date: Timestamp
         """
         # Check for crypto transaction limits
         if crypto_amount > self.market.max_transaction_size_crypto:
@@ -269,15 +312,18 @@ class CryptoPredictor(object):
             crypto_amount = max_crypto_amount
 
         if buy:
-            fiat_amount = self.get_transaction_fiat_amount(True, crypto_amount, current_price)
+            fiat_amount = self.get_transaction_fiat_amount(buy, crypto_amount, current_price)
             self.cash -= fiat_amount
             self.owned_crypto += crypto_amount
             assert round(self.cash, 4) >= 0
         else:
-            fiat_amount = self.get_transaction_fiat_amount(False, crypto_amount, current_price)
+            fiat_amount = self.get_transaction_fiat_amount(buy, crypto_amount, current_price)
             self.cash += fiat_amount
             self.owned_crypto -= crypto_amount
             assert self.owned_crypto >= 0
+
+        if transaction_date:  # Save to predictor_states:
+            self.update_predictor_states(transaction_date, current_price, buy)
 
         logger.debug(
             "{0} - {1} {2} (${3})".format('BUY' if buy else 'SELL', self._crypto_name, round(crypto_amount, 4),
@@ -308,7 +354,8 @@ class CryptoPredictor(object):
         current_price = float(self._price_list[self._window_size - 1])
         for start_day in range(len(self._price_list) - self._window_size - (self.lookahead_days - 1)):
             stop_day = start_day + self._window_size
-            logger.debug("Day {0} - {1}".format(day, self._price_list.index[stop_day]))
+            stop_date = self._price_list.index[stop_day]
+            logger.debug("Day {0} - {1}".format(day, stop_date))
             time_window = self._price_list[start_day:stop_day]
             lookahead_day = stop_day + self.lookahead_days - 1
             future_prices = self._price_list[stop_day:lookahead_day + 1]
@@ -318,7 +365,7 @@ class CryptoPredictor(object):
             transaction_type = transaction[0]
             crypto_amount = transaction[1]
 
-            self.perform_transaction(transaction_type == 'BUY', crypto_amount, current_price)
+            self.perform_transaction(transaction_type == 'BUY', crypto_amount, current_price, stop_date)
 
             # End of the day allowance
             self.cash += self.daily_allowance
@@ -369,7 +416,8 @@ class CryptoPredictor(object):
                 break
 
             stop_day = start_day + self._window_size
-            logger.debug("Day {0} - {1}".format(day + 1, self._price_list.index[stop_day]))
+            stop_date = self._price_list.index[stop_day]
+            logger.debug("Day {0} - {1}".format(day + 1, stop_date))
             current_price = float(self._price_list[stop_day - 1])
             t = transactions[day]
             if type(t) is int or type(t) is long:
@@ -386,7 +434,7 @@ class CryptoPredictor(object):
                     round(fiat_amount, 0) < self.market.min_transaction_size_fiat:
                 crypto_amount = 0
 
-            self.perform_transaction(transaction == 'BUY', crypto_amount, current_price)
+            self.perform_transaction(transaction == 'BUY', crypto_amount, current_price, stop_date)
 
             # End of the day allowance
             self.cash += daily_allowance
