@@ -70,14 +70,14 @@ class IntegrationTests(unittest.TestCase):
 
     def test_prediction_simulation(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
-        results = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR, models=trained_classifiers)
+        results, y_true = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR, models=trained_classifiers)
         self.assertAlmostEqual(results['MLPClassifier']['cash'], 200, 0)
         self.assertEquals(results['MLPClassifier']['owned_crypto'], 0)
         self.assertEquals(results['MLPClassifier']['total_investment'], 200)
 
     def test_prediction_simulation_vs_predict_for_date(self):
         trained_classifiers = run_training_pipeline(self.preprocessed_df, self.config.training)
-        simulation_results = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR,
+        simulation_results, y_true = run_prediction_simulation(self.config, RES_DIR, RES_DIR, RES_DIR,
                                                        models=trained_classifiers)
 
         # Test SVC

@@ -419,8 +419,7 @@ def run_classic_training(cryptonalysis_config_grid):
                                                                cryptonalysis_config_grid.save_preprocessing_data,
                                                                cryptonalysis_config_grid.save_preprocessing_roi)
             except Exception as e:
-                logger.error("Error in preprocessing pipeline! Skipping...")
-                logger.error(e.message)
+                logger.error("Error in preprocessing pipeline! Skipping...", exc_info=e)
                 break
 
             # Grid search training pipeline parameters
@@ -443,8 +442,7 @@ def run_classic_training(cryptonalysis_config_grid):
                         for classifier_data in classifiers.values():
                             save_model(classifier_data['classifier'], crypto, preprocessing_config, training_config)
                 except Exception as e:
-                    logger.error("Error in training pipeline {}! Skipping...".format(e.message))
-                    logger.error(e)
+                    logger.error("Error in training pipeline {}! Skipping...".format(e.message), exc_info=e)
 
 
 if __name__ == '__main__':
