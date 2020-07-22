@@ -3,49 +3,14 @@
 Configuration classes.
 """
 
-import json
-import os
-from datetime import date
-from logging.config import fileConfig
-from pyhocon import ConfigFactory, ConfigTree
+from config_base import Config, convert_to_dict, load_config
 from cryptonalysis.utils import misc_utils
 from cryptonalysis.ml_core.transaction_builders import get_predictor_class_from_name
-from pandas.io.json import json_normalize
+from datetime import date
 from pandas import DatetimeIndex
 
 
-class Config(object):
-
-    def __init__(self, config_dict):
-        self.config_dict = config_dict
-
-    def to_csv_str(self):
-        flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
-        sorted_keys = sorted(flat_config_dict.keys())
-        sorted_keys_str = ','.join(sorted_keys)
-        values = ','.join([str(flat_config_dict[k]
-                               if type(flat_config_dict[k]) is not date else flat_config_dict[k].strftime('%Y-%m-%d'))
-                           for k in sorted_keys])
-        return sorted_keys_str, values
-
-    def to_single_line_str(self):
-        flat_config_dict = json_normalize(self.config_dict).to_dict(orient='records')[0]
-        sorted_keys = sorted(flat_config_dict.keys())
-        values = ''.join([str(flat_config_dict[k]
-                              if type(flat_config_dict[k]) is not date else flat_config_dict[k].strftime('%Y-%m-%d'))
-                          for k in sorted_keys])
-        return values
-
-    def __str__(self):
-        serializable_dict = {
-            k: v if type(v) is not date else v.strftime('%Y-%m-%d')
-            for k, v in self.config_dict.items()
-        }
-        return json.dumps(serializable_dict, indent=2)
-
-
 class PreprocessingConfig(Config):
-
     # Default values
     START_DATE = misc_utils.parse_date('2015-08-07')  # The date from which to start historical data preprocessing
     END_DATE = misc_utils.parse_date('today')  # The date in which to end historical data preprocessing
@@ -130,7 +95,6 @@ class PreprocessingConfig(Config):
 
 
 class TrainingConfig(Config):
-
     # Default values
     SHUFFLE_DATA = True  # Whether or not to shuffle the rows of the training data
     TRAINING_SIZE = 0.7  # The size (0~1) of the training dataset (used in non-CV). Remaining is for testing.
@@ -159,7 +123,6 @@ class TrainingConfig(Config):
 
 
 class DeepLearningConfig(Config):
-
     # Default values
     NEURONS = 30  # Number of neurons used to build NN model
     ACTIVATION_FUNCTION = 'sigmoid'  # e.g. 'sigmoid', 'relu', 'tanh'
@@ -183,7 +146,6 @@ class DeepLearningConfig(Config):
 
 
 class CryptonalysisConfig(Config):
-
     # Default values
     CRYPTO = 'ETH'
     SAVE_PREPROCESSING_ROI = False  # Whether or not to save the preprocessing ROI to a local file for analysis
@@ -275,43 +237,6 @@ class CryptonalysisConfigGrid(object):
                          (len(deep_learning_config_grid) or 1)
 
 
-def convert_to_flat_dict(config, prefix=""):
-    """
-    Recursively convert ConfigTree or dictionary into a flat dictionary.
-    :param config
-    :type config: ConfigTree or dict
-    :param prefix: Prefix to add to each key when flattening
-    :return: A flat configuration tree
-    :rtype: dict
-    """
-    result = {}
-    for k in config:
-        v = config[k]
-        if isinstance(v, dict):
-            for k1 in convert_to_flat_dict(v, k + "."):
-                result[prefix + k1] = str(config[k1])
-        else:
-            result[prefix + k] = str(v)
-    return result
-
-
-def convert_to_dict(config):
-    """
-    Recursively convert ConfigTree into a dictionary.
-    :param config
-    :type config: ConfigTree or dict
-    :return: A dictionary
-    :rtype: dict
-    """
-    result = {}
-    for k in config:
-        v = config[k]
-        if isinstance(v, dict) or isinstance(v, ConfigTree):
-            v = convert_to_dict(v)
-        result[k] = v
-    return result
-
-
 def build_cryptonalysis_config_grid(config):
     """
     Build a CryptonalysisConfigGrid object from a config dictionary.
@@ -369,21 +294,6 @@ def build_cryptonalysis_config_grid(config):
     )
 
     return cryptonalysis_config_grid
-
-
-def load_config(config_path, config_file_name):
-    config_file = os.path.join(config_path, config_file_name)
-
-    logging_config_file_name = 'logging.ini'
-    logging_config_file = os.path.join(config_path, logging_config_file_name)
-
-    config = ConfigFactory.parse_file(config_file)
-
-    if logging_config_file:
-        flat_config = convert_to_flat_dict(config)
-        fileConfig(fname=logging_config_file, defaults=flat_config)
-
-    return config
 
 
 def load_cryptonalysis_config(config_path, config_file_name):

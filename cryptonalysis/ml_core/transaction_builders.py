@@ -96,8 +96,8 @@ class CryptoPredictor(object):
         self.owned_crypto = 0
         self.transactions = []
         index = pd.date_range(starting_date, periods=1, freq='D')
-        self.predictor_states = DataFrame(data=None, columns=['cash', 'owned_crypto', 'capital', 'total_investment',
-                                                              'roi', 'roi_perc'],
+        self.predictor_states = DataFrame(data=None, columns=['price', 'cash', 'owned_crypto', 'capital',
+                                                              'total_investment', 'roi', 'roi_perc'],
                                           index=index)
 
         self.market = market
@@ -159,8 +159,8 @@ class CryptoPredictor(object):
         capital = self.get_current_crypto_value(current_price) if buy else self.cash
         roi = capital - self.total_investment
         roi_perc = roi / self.total_investment
-        self.predictor_states.loc[transaction_date] = [self.cash, self.owned_crypto, capital, self.total_investment,
-                                                       roi, roi_perc]
+        self.predictor_states.loc[transaction_date] = [current_price, self.cash, self.owned_crypto, capital,
+                                                       self.total_investment, roi, roi_perc]
 
     def get_transaction_tuple(self, prices, current_price, future_prices):
         """
@@ -235,7 +235,7 @@ class CryptoPredictor(object):
 
     def get_current_crypto_value(self, current_price):
         """
-        Get current value of owned crypto based on a given current price and a transaction fee.
+        Get current capital value of owned crypto based on a given current price and a transaction fee.
         :param current_price: The current crypto price to take into account.
         :type current_price: float
         :return: the value of the owned crypto
@@ -353,13 +353,13 @@ class CryptoPredictor(object):
         stop_day = 0
         current_price = float(self._price_list[self._window_size - 1])
         for start_day in range(len(self._price_list) - self._window_size - (self.lookahead_days - 1)):
-            stop_day = start_day + self._window_size
+            stop_day = start_day + self._window_size - 1
             stop_date = self._price_list.index[stop_day]
             logger.debug("Day {0} - {1}".format(day, stop_date))
-            time_window = self._price_list[start_day:stop_day]
-            lookahead_day = stop_day + self.lookahead_days - 1
-            future_prices = self._price_list[stop_day:lookahead_day + 1]
-            current_price = float(self._price_list[stop_day - 1])
+            time_window = self._price_list[start_day:stop_day + 1]
+            lookahead_day = stop_day + self.lookahead_days
+            future_prices = self._price_list[stop_day + 1:lookahead_day + 1]
+            current_price = float(self._price_list[stop_day])
             transaction = self.get_transaction_tuple(time_window, current_price, future_prices)  # type: tuple
 
             transaction_type = transaction[0]
@@ -415,10 +415,10 @@ class CryptoPredictor(object):
             if day >= len(transactions):
                 break
 
-            stop_day = start_day + self._window_size
+            stop_day = start_day + self._window_size - 1
             stop_date = self._price_list.index[stop_day]
             logger.debug("Day {0} - {1}".format(day + 1, stop_date))
-            current_price = float(self._price_list[stop_day - 1])
+            current_price = float(self._price_list[stop_day])
             t = transactions[day]
             if type(t) is int or type(t) is long:
                 transaction = get_transaction_type(t)

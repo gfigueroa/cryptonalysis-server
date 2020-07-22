@@ -7,8 +7,8 @@ from cryptonalysis.config import load_cryptonalysis_config, CryptonalysisConfig,
     DeepLearningConfig
 from cryptonalysis.utils.data_link import get_crypto_data_for_date
 from cryptonalysis.utils.misc_utils import parse_date
-from market import market
-from pandas import DataFrame, Series, DatetimeIndex
+from market import market, MarketParameters
+from pandas import DataFrame, Series
 from preprocessing import get_historical_df, get_price_list, preprocess_dataframe, preprocess_data_point, \
     CRYPTOCURRENCIES, MASTER_DATA_DIR
 from transaction_builders import CryptoPredictor
@@ -25,6 +25,12 @@ logger = logging.getLogger()
 # Constants
 STARTING_INVESTMENT = 100
 DAILY_ALLOWANCE = 5
+MARKET_PARAMETERS = {
+    'min_transaction_size_crypto': 0.01,
+    'min_transaction_size_fiat': 1,
+    'max_transaction_size_crypto': 100,
+    'max_transaction_size_fiat': 100
+}
 
 
 def get_simple_model_name(model):
@@ -110,7 +116,7 @@ def build_deep_learning_datasets(split_dfs, crypto_name):
     return inputs, outputs
 
 
-def run_transactions(predictor, y_pred):
+def run_transactions(predictor, y_pred, starting_investment=None, daily_allowance=None):
     """
     Run a list of predicted transactions on a predictor.
     :param predictor: a CryptoPredictor on which to run a simulation for a list of predicted transactions.
@@ -118,9 +124,13 @@ def run_transactions(predictor, y_pred):
     :param y_pred: predicted transactions
     :rtype: Series
     :return: a dictionary with prediction results
+    :param starting_investment: The starting investment to override the one set on the CryptoPredictor instance.
+    :type starting_investment: float
+    :param daily_allowance: A daily allowance to override the one set on the CryptoPredictor instance.
+    :type daily_allowance: float
     :rtype: dict
     """
-    predictor.run_transaction_simulation(y_pred.tolist(), STARTING_INVESTMENT, DAILY_ALLOWANCE)
+    predictor.run_transaction_simulation(y_pred.tolist(), starting_investment, daily_allowance)
     cash = predictor.cash
     total_investment = predictor.total_investment
     owned_crypto = predictor.owned_crypto
@@ -133,23 +143,20 @@ def run_transactions(predictor, y_pred):
     }
 
 
-def predict_labeled_data(model, X, y, index):
+def predict_labeled_data(model, X, y):
     """
-    Make a prediction on X and cross-check it against already labeled data y. An index is provided for maintaining the
-    same index.
+    Make a prediction on X and cross-check it against already labeled data y.
     :param model: an instance of a prediction model
     :param X: attributes for prediction
     :type X: DataFrame
     :param y: labeled ground-truth data
-    :type y: Series or np.ndarray
-    :param index: a DatetimeIndex to clip to the newly predicted data
-    :type index: DatetimeIndex
+    :type y: Series
     :return: a tuple containing the newly predicted data and the accuracy
     :rtype: tuple
     """
     logger.info("Evaluation results for {} model:".format(get_simple_model_name(model)))
     preds = [0 if y_i < 0.5 else 1 for y_i in model.predict(X)]
-    y_true, y_pred = y, Series(preds, index)
+    y_true, y_pred = y, Series(preds, y.index)
     logger.info('\n' + classification_report(y_true, y_pred))
     accuracy = accuracy_score(y_true, y_pred)
     logger.info("Evaluation accuracy ({}): {}\n".format(get_simple_model_name(model), accuracy))
@@ -157,7 +164,8 @@ def predict_labeled_data(model, X, y, index):
     return y_pred, accuracy
 
 
-def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler_dir=None, model_dir=None, models=None):
+def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler_dir=None, model_dir=None, models=None,
+                              market_parameters=None, starting_investment=None, daily_allowance=None):
     """
     Run a prediction simulation with unseen data.
     :param cryptonalysis_config
@@ -174,30 +182,40 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
     :param models: (Default None) A dictionary with the trained classifiers to use for prediction. If None, the models
     will be loaded from the models directory.
     :type models: dict
-    :return A dictionary with results of the simulation.
+    :param market_parameters: Overridden market parameters
+    :type market_parameters: MarketParameters
+    :param starting_investment: The starting investment to override the one set on the CryptoPredictor instance.
+    :type starting_investment: float
+    :param daily_allowance: A daily allowance to override the one set on the CryptoPredictor instance.
+    :type daily_allowance: float
+    :return A tuple containing a dictionary with results of the simulation and the ground truth.
+    The results dictionary contains the following data:
     {
         'SVC': {
             'cash': svc_cash,
             'total_investment': svc_total_investment,
             'owned_crypto': svc_owned_crypto,
             'y_pred': y_pred_svc,
-            'acc': accuracy_svc
+            'acc': accuracy_svc,
+            'predictor_states': predictor states DataFrame
         },
         'MLPClassifier': {
             'cash': mlp_cash,
             'total_investment': mlp_total_investment,
             'owned_crypto': mlp_owned_crypto,
             'y_pred': y_pred_mlp,
-            'acc': accuracy_mlp
+            'acc': accuracy_mlp,
+            'predictor_states': predictor states DataFrame
         }
     }
-    :rtype: dict
+    :rtype: (dict, Series)
     """
     logger.info("Running prediction simulation...")
     logger.info("Crypto: {}".format(cryptonalysis_config.crypto))
     logger.info("Preprocessing config:\n" + str(cryptonalysis_config.preprocessing))
 
     master_data_dir_to_use = master_data_dir or MASTER_DATA_DIR
+    market_to_use = market_parameters or market
 
     # Preprocessing for ground-truth transactions
     try:
@@ -218,8 +236,9 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
             data_file = os.path.join(master_data_dir_to_use,
                                      "new_{}.csv".format(CRYPTOCURRENCIES[cryptonalysis_config.crypto]))
             df = get_historical_df(data_file)
-            preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto, cryptonalysis_config.preprocessing,
-                                                     predicting=True, scaler_dir=scaler_dir)
+            preprocessed_data = preprocess_dataframe(df, cryptonalysis_config.crypto,
+                                                     cryptonalysis_config.preprocessing, predicting=True,
+                                                     scaler_dir=scaler_dir)
     except Exception as e:
         logger.error("Error in preprocessing for prediction!", exc_info=e)
         raise e
@@ -237,12 +256,11 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
 
         # Predictor parameters
         lookahead_days = preprocessing_config.predictor_params['lookahead_days']
-        starting_investment = preprocessing_config.predictor_params['starting_investment']
-        daily_allowance = preprocessing_config.predictor_params['daily_allowance']
 
         prices = get_price_list(df, price_column)
-        predictor = predictor_cls(market, prices, window_size, cryptonalysis_config.crypto, starting_date, ending_date,
-                                  starting_investment, daily_allowance, lookahead_days)
+        predictor = predictor_cls(market_to_use, prices, window_size, cryptonalysis_config.crypto, starting_date,
+                                  ending_date, preprocessing_config.predictor_params['starting_investment'],
+                                  preprocessing_config.predictor_params['daily_allowance'], lookahead_days)
 
         # Get model(s)
         if cryptonalysis_config.deep_learning:  # Deep learning path
@@ -273,26 +291,80 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
 
             models = [svc_model, mlp_model]
 
+        # Set index on output
+        if hasattr(X, 'index'):
+            index = X.index
+        else:
+            index = preprocessed_dfs[cryptonalysis_config.crypto].index
+        y_true = Series(y, index) if isinstance(y, np.ndarray) else y
+
         # Do the actual predictions
         results = {}
         for model in models:
             model_name = get_simple_model_name(model)
-            if hasattr(X, 'index'):
-                index = X.index
-            else:
-                index = preprocessed_dfs[cryptonalysis_config.crypto].index
-            y_pred, acc = predict_labeled_data(model, X, y, index)
+
+            y_pred, acc = predict_labeled_data(model, X, y_true)
 
             # Transaction simulation
-            transactions_results = run_transactions(predictor, y_pred)
+            transactions_results = run_transactions(predictor, y_pred, starting_investment, daily_allowance)
             results[model_name] = transactions_results
             results[model_name]['acc'] = acc
 
         logger.info("Prediction simulation complete!\n")
-        return results
+        return results, y_true
     except Exception as e:
         logger.error("Error in prediction simulation!", exc_info=e)
         raise e
+
+
+def run_multiple_simulations(conf_path, market_parameters=None, starting_investment=None, daily_allowance=None):
+    print("HELLO")
+    logger.info("Running multiple simulations...")
+    config_files = filter(lambda c: c.startswith('training_best') or c.startswith('training_dl_best'),
+                          os.listdir(conf_path))
+    max_roi = {}
+    max_acc = {}
+    for conf_file in config_files:
+        logger.info("Running simulation for config file '{}'...".format(conf_file))
+        conf = load_cryptonalysis_config(conf_path, conf_file)
+        results, y_true = run_prediction_simulation(conf, market_parameters=market_parameters,
+                                                    starting_investment=starting_investment,
+                                                    daily_allowance=daily_allowance)
+        yield conf_file, conf, results, y_true  # For external use
+
+        for model in results.keys():
+            if model not in max_roi:
+                max_roi[model] = {}
+                max_roi[model]['roi'] = -sys.maxint
+            if model not in max_acc:
+                max_acc[model] = {}
+                max_acc[model]['acc'] = 0
+
+            roi = results[model]['cash'] - results[model]['total_investment']
+            roi_perc = (roi / results[model]['total_investment']) * 100
+            acc = results[model]['acc']
+            if roi > max_roi[model]['roi']:
+                max_roi[model]['roi'] = roi
+                max_roi[model]['roi_perc'] = roi_perc
+                max_roi[model]['acc'] = acc
+                max_roi[model]['conf'] = conf_file
+            if acc > max_acc[model]['acc']:
+                max_acc[model]['roi'] = roi
+                max_acc[model]['roi_perc'] = roi_perc
+                max_acc[model]['acc'] = acc
+                max_acc[model]['conf'] = conf_file
+
+    for model in max_roi.keys():
+        logger.info("Max roi {}: ${}, roi %: {}%, acc: {}, conf: {}".format(model,
+                                                                            round(max_roi[model]['roi'], 2),
+                                                                            round(max_roi[model]['roi_perc'], 4),
+                                                                            round(max_roi[model]['acc'], 2),
+                                                                            max_roi[model]['conf']))
+        logger.info("Max acc {}: {}, roi: ${} roi %: {}%, conf: {}\n".format(model,
+                                                                             round(max_acc[model]['acc'], 2),
+                                                                             round(max_acc[model]['roi'], 2),
+                                                                             round(max_acc[model]['roi_perc'], 4),
+                                                                             max_acc[model]['conf']))
 
 
 def predict_for_date(crypto_name, preprocessing_config, training_config, deep_learning_config=None, for_date=None,
@@ -396,52 +468,6 @@ def predict_for_date(crypto_name, preprocessing_config, training_config, deep_le
         }
 
 
-def run_multiple_simulations(conf_path):
-    logger.info("Running multiple simulations...")
-    config_files = filter(lambda c: c.startswith('training_best') or c.startswith('training_dl_best'),
-                          os.listdir(conf_path))
-    max_roi = {}
-    max_acc = {}
-    for conf_file in config_files:
-        logger.info("Running simulation for config file '{}'...".format(conf_file))
-        conf = load_cryptonalysis_config(config_path, conf_file)
-        results = run_prediction_simulation(conf)
-
-        for model in results.keys():
-            if model not in max_roi:
-                max_roi[model] = {}
-                max_roi[model]['roi'] = -sys.maxint
-            if model not in max_acc:
-                max_acc[model] = {}
-                max_acc[model]['acc'] = 0
-
-            roi = results[model]['cash'] - results[model]['total_investment']
-            roi_perc = (roi / results[model]['total_investment']) * 100
-            acc = results[model]['acc']
-            if roi > max_roi[model]['roi']:
-                max_roi[model]['roi'] = roi
-                max_roi[model]['roi_perc'] = roi_perc
-                max_roi[model]['acc'] = acc
-                max_roi[model]['conf'] = conf_file
-            if acc > max_acc[model]['acc']:
-                max_acc[model]['roi'] = roi
-                max_acc[model]['roi_perc'] = roi_perc
-                max_acc[model]['acc'] = acc
-                max_acc[model]['conf'] = conf_file
-
-    for model in max_roi.keys():
-        logger.info("Max roi {}: ${}, roi %: {}%, acc: {}, conf: {}".format(model,
-                                                                            round(max_roi[model]['roi'], 2),
-                                                                            round(max_roi[model]['roi_perc'], 4),
-                                                                            round(max_roi[model]['acc'], 2),
-                                                                            max_roi[model]['conf']))
-        logger.info("Max acc {}: {}, roi: ${} roi %: {}%, conf: {}\n".format(model,
-                                                                             round(max_acc[model]['acc'], 2),
-                                                                             round(max_acc[model]['roi'], 2),
-                                                                             round(max_acc[model]['roi_perc'], 4),
-                                                                             max_acc[model]['conf']))
-
-
 if __name__ == '__main__':
     # random seed for reproducibility
     np.random.seed(202)
@@ -452,9 +478,18 @@ if __name__ == '__main__':
     action = sys.argv[1].lower()
     config_path = 'config'
 
+    market_params = MarketParameters(
+        min_transaction_size_crypto=MARKET_PARAMETERS['min_transaction_size_crypto'],
+        min_transaction_size_fiat=MARKET_PARAMETERS['min_transaction_size_fiat'],
+        max_transaction_size_crypto=MARKET_PARAMETERS['max_transaction_size_crypto'],
+        max_transaction_size_fiat=MARKET_PARAMETERS['max_transaction_size_fiat'])
+
     if action == 'multi_simulations':
         logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))  # Necessary for initial logs
-        run_multiple_simulations(config_path)
+        for _, _, _, _ in run_multiple_simulations(config_path, market_parameters=market_params,
+                                                   starting_investment=STARTING_INVESTMENT,
+                                                   daily_allowance=DAILY_ALLOWANCE):
+            pass
     else:
         if len(sys.argv) < 3:
             raise ValueError('Config file not given in args!')
@@ -462,7 +497,8 @@ if __name__ == '__main__':
         config = load_cryptonalysis_config(config_path, config_file)
 
         if action == 'simulation':
-            run_prediction_simulation(config)
+            run_prediction_simulation(config, market_parameters=market_params,
+                                      starting_investment=STARTING_INVESTMENT, daily_allowance=DAILY_ALLOWANCE)
         elif action == 'prediction':
             today = parse_date('today')
             predictions = predict_for_date(config.crypto, config.preprocessing, config.training, config.deep_learning,

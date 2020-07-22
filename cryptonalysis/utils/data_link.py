@@ -41,7 +41,7 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     end_date_str = adjusted_end_date.strftime('%Y%m%d')
     crypto_endpoint = "{}?start={}&end={}".format(API_URLS[crypto_name], start_date_str, end_date_str)
 
-    df = pd.read_html(crypto_endpoint)[2]  # Format change
+    df = pd.read_html(crypto_endpoint.lower())[2]
 
     # Clean up column names
     def replace(s):
@@ -124,10 +124,3 @@ def update_new_data(crypto_name, end_date):
     updated_df.to_csv(data_file, index=True, index_label='Date', sep='\t')
 
     return updated_df
-
-
-if __name__ == '__main__':
-    # Update new data
-    for crypto in CRYPTOCURRENCIES.keys():
-        yesterday = parse_date('yesterday')
-        update_new_data(crypto, yesterday)
