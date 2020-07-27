@@ -74,7 +74,7 @@ IRRELEVANT_CONFIGURATION_PARAMS = [
 STARTING_INVESTMENT = [100]
 DAILY_ALLOWANCE = [5]
 MARKET_PARAMETERS = {
-    'min_transaction_size_crypto': [0.01, 0.1],
+    'min_transaction_size_crypto': [0.001, 0.01, 0.1],
     'min_transaction_size_fiat': [1, 10],
     'max_transaction_size_crypto': [100, 1000],
     'max_transaction_size_fiat': [100, 1000]

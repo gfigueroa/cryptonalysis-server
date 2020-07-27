@@ -14,6 +14,7 @@ DUMP_DIR = os.path.join('cryptonalysis', 'data', 'dump')
 TRANSACTION_TYPE = {
     'BUY': 1,
     'SELL': 0,
+    'PASS': None,
     'UNKNOWN': -1  # Used for pure prediction
 }
 
@@ -27,11 +28,13 @@ def get_transaction_type(transaction_value):
     'SELL'
     >>> get_transaction_type(1)
     'BUY'
+    >>> get_transaction_type(None)
+    'PASS'
     >>> get_transaction_type(-1)
     'UNKNOWN'
 
     :param transaction_value
-    :type transaction_value: int
+    :type transaction_value: int or None
     :return:
     """
     for transaction, value in TRANSACTION_TYPE.items():
@@ -57,6 +60,7 @@ class CryptoPredictor(object):
     LOOKAHEAD_DAYS = 1
     PROB_BUY = 1
     PROB_SELL = 1
+    STATIC_PREDICTOR = False  # Whether or not this predictor instance is static and untrained
 
     def __init__(self, market, price_list, window_size, crypto_name, starting_date, ending_date,
                  starting_investment=None, daily_allowance=None, lookahead_days=None, prob_buy=None, prob_sell=None):
@@ -162,11 +166,12 @@ class CryptoPredictor(object):
         self.predictor_states.loc[transaction_date] = [current_price, self.cash, self.owned_crypto, capital,
                                                        self.total_investment, roi, roi_perc]
 
-    def get_transaction_tuple(self, prices, current_price, future_prices):
+    def _get_transaction_tuple(self, prices, current_price, future_prices):
         """
         Get a transaction (transaction, crypto_amount) based on the given parameters.
         The method makes use of the prob_buy and prob_sell properties to correctly return a transaction based on chance.
         :param prices: a list of the last self._window_size prices of the given cryptocurrency
+        :type prices: Series
         :param current_price: the price of the cryptocurrency at the present day
         :param future_prices: a list of future prices of the cryptocurrency of size lookahead_days
         :return: a tuple of the form (transaction, amount), where transaction can be 'BUY' or 'SELL'
@@ -191,8 +196,11 @@ class CryptoPredictor(object):
             else:
                 transaction = 'BUY'
                 crypto_amount, fiat_amount = self.buy(current_price)
+        elif transaction == 'PASS':
+            transaction = 'BUY'
+            crypto_amount = fiat_amount = 0
         else:
-            raise ValueError("get_transaction() method must return either 'BUY' or 'SELL'")
+            raise ValueError("get_transaction() method must return either 'BUY', 'SELL' or 'PASS'")
 
         # Ignore for transactions less than or close to a minimum crypto/fiat transaction
         if crypto_amount < self.market.min_transaction_size_crypto or \
@@ -203,14 +211,14 @@ class CryptoPredictor(object):
 
     @abstractmethod
     def get_transaction(self, prices, current_price, future_prices):
-        # type: (list, float, list) -> str
+        # type: (Series, float, list) -> str
         """
         Child classes must override this method to define a way of doing a transaction based on the given
         parameters.
         :param prices: a list of the last self._window_size prices of the given cryptocurrency
         :param current_price: the price of the cryptocurrency at the present day
         :param future_prices: a list of future prices of the cryptocurrency of size lookahead_days
-        :return: a transaction that can be 'BUY' or 'SELL'
+        :return: a transaction that can be 'BUY', 'SELL' or 'PASS'
         """
         pass
 
@@ -223,12 +231,8 @@ class CryptoPredictor(object):
         :return The max crypto amount (e.g. ETH) currently allowed on a transaction
         """
         if buy:
-            # crypto_amount = \
-            #     (self.cash / current_price) - ((self.cash / current_price) * self.market.transaction_fee_perc)
-            # Revised formula to account for all the cash available
             crypto_amount = self.cash / (current_price + (current_price * self.market.transaction_fee_perc))
         else:
-            # crypto_amount = self.owned_crypto - (self.owned_crypto * self.market.transaction_fee_perc)
             crypto_amount = self.owned_crypto  # All of it
 
         return crypto_amount
@@ -360,7 +364,7 @@ class CryptoPredictor(object):
             lookahead_day = stop_day + self.lookahead_days
             future_prices = self._price_list[stop_day + 1:lookahead_day + 1]
             current_price = float(self._price_list[stop_day])
-            transaction = self.get_transaction_tuple(time_window, current_price, future_prices)  # type: tuple
+            transaction = self._get_transaction_tuple(time_window, current_price, future_prices)  # type: tuple
 
             transaction_type = transaction[0]
             crypto_amount = transaction[1]
@@ -628,6 +632,26 @@ class GreedyPredictor(CryptoPredictor):
         return transaction
 
 
+class WeeklyHodlPredictor(CryptoPredictor):
+    """
+    Class WeeklyHodlPredictor.
+    Buy only once per week, on Tuesdays. NEVER sell.
+    """
+
+    STATIC_PREDICTOR = True
+
+    def get_transaction(self, prices, current_price, future_prices):
+        """
+        Buy what you can with your cash on Tuesdays.
+        """
+        weekday = prices.index.weekday[-1]
+        if weekday == 1:  # Tuesday
+            transaction = 'BUY'
+        else:
+            transaction = 'PASS'
+        return transaction
+
+
 def get_predictor_class_from_name(predictor_cls_name):
     """
     Get a CryptoPredictor subclass given a class name.
@@ -648,5 +672,7 @@ def get_predictor_class_from_name(predictor_cls_name):
         return RandomPredictor
     elif predictor_cls_name == 'GreedyPredictor':
         return GreedyPredictor
+    elif predictor_cls_name == 'WeeklyHodlPredictor':
+        return WeeklyHodlPredictor
     else:
         raise TypeError("CryptoPredictor subclass '{}' does not exist.".format(predictor_cls_name))

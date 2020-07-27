@@ -262,6 +262,22 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
                                   ending_date, preprocessing_config.predictor_params['starting_investment'],
                                   preprocessing_config.predictor_params['daily_allowance'], lookahead_days)
 
+        # Shortcut for static predictors
+        if predictor.STATIC_PREDICTOR:
+            # Split dataset for classification
+            _, y = split_dataset(preprocessed_data)
+            predictor.run_predictor(False)
+            transactions_results = {
+                'cash': predictor.cash,
+                'total_investment': predictor.total_investment,
+                'owned_crypto': predictor.owned_crypto,
+                'y_pred': y,
+                'predictor_states': predictor.predictor_states
+            }
+            results = {predictor_cls.__name__: transactions_results}
+            results[predictor_cls.__name__]['acc'] = 1
+            return results, y
+
         # Get model(s)
         if cryptonalysis_config.deep_learning:  # Deep learning path
             # Split the datasets for classification
@@ -320,7 +336,11 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
 def run_multiple_simulations(conf_path, market_parameters=None, starting_investment=None, daily_allowance=None):
     print("HELLO")
     logger.info("Running multiple simulations...")
-    config_files = filter(lambda c: c.startswith('training_best') or c.startswith('training_dl_best'),
+    config_files = filter(lambda c:
+                          c.startswith('training_best') or
+                          c.startswith('training_dl_best') or
+                          c.startswith('training_best_smart_btc_roi') or
+                          c.startswith('static'),
                           os.listdir(conf_path))
     max_roi = {}
     max_acc = {}
