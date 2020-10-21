@@ -238,7 +238,7 @@ def load_preprocessed_data(crypto_name, preprocessing_config, preprocessed_data_
     dir_to_use = PREPROCESSED_DATA_DIR if preprocessed_data_dir is None else preprocessed_data_dir
     data_file_path = os.path.join(dir_to_use, data_filename)
     if os.path.isfile(data_file_path):
-        logger.info("Preprocessed datafile '{0}'' already exists. "
+        logger.info("Preprocessed datafile '{0}' already exists. "
                     "Loading file and skipping preprocessing pipeline...".format(data_file_path))
         transactions_df = pd.read_csv(data_file_path, index_col='date')
         transactions_df.index = pd.to_datetime(transactions_df.index)

@@ -334,7 +334,6 @@ def run_prediction_simulation(cryptonalysis_config, master_data_dir=None, scaler
 
 
 def run_multiple_simulations(conf_path, market_parameters=None, starting_investment=None, daily_allowance=None):
-    print("HELLO")
     logger.info("Running multiple simulations...")
     config_files = filter(lambda c:
                           c.startswith('training_best') or
