@@ -1,10 +1,11 @@
 import logging
 import pandas as pd
 import os
-from cryptonalysis.ml_core.preprocessing import CRYPTOCURRENCIES
+import time
+from cryptonalysis.ml_core.preprocessing import CRYPTOCURRENCIES, MASTER_DATA_DIR, get_historical_df
 from datetime import date, timedelta
 from misc_utils import parse_date
-from cryptonalysis.ml_core.preprocessing import MASTER_DATA_DIR, get_historical_df
+from selenium import webdriver
 
 
 # Logging
@@ -15,6 +16,7 @@ API_URLS = {
     crypto_short: "https://coinmarketcap.com/currencies/{}/historical-data/".format(crypto_long)
     for crypto_short, crypto_long in map(lambda (k, v): (k, v) if k != 'XRP' else (k, k), CRYPTOCURRENCIES.items())
 }
+CHROME_DRIVER_PATH = 'resources/chromedriver'
 
 
 def fetch_crypto_data(crypto_name, start_date, end_date):
@@ -36,12 +38,14 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     if start_date >= end_date:
         raise ValueError('start_date must be before end_date!')
 
-    start_date_str = start_date.strftime('%Y%m%d')
-    adjusted_end_date = end_date - timedelta(days=1)  # The API always returns an extra day
-    end_date_str = adjusted_end_date.strftime('%Y%m%d')
-    crypto_endpoint = "{}?start={}&end={}".format(API_URLS[crypto_name], start_date_str, end_date_str)
+    crypto_endpoint = API_URLS[crypto_name]
 
-    df = pd.read_html(crypto_endpoint.lower())[2]
+    # Wait for dynamic content to load
+    driver = webdriver.Chrome(CHROME_DRIVER_PATH)
+    time.sleep(5)
+    driver.get(crypto_endpoint.lower())
+
+    df = pd.read_html(driver.page_source)[0]
 
     # Clean up column names
     def replace(s):
@@ -52,18 +56,33 @@ def fetch_crypto_data(crypto_name, start_date, end_date):
     df['Date'] = pd.to_datetime(df['Date'])
     df = df.sort_values('Date').reset_index(drop=True)
 
-    # Cleanup
-    if df['Market Cap'].dtype == 'object':
-        # Remove '-'
-        df.loc[df['Market Cap'] == '-', 'Market Cap'] = 0
+    # Convert numeric columns
+    numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap']
 
+    # Cleanup
+    # Remove '-' from Market Cap
+    df.loc[df['Market Cap'] == '-', 'Market Cap'] = 0
+    # Remove extra chars and convert to numeric
+    for col in numeric_columns:
         # Convert to numeric
-        df['Market Cap'] = df['Market Cap'].str.replace(',', '')
-        df['Market Cap'] = pd.to_numeric(df['Market Cap'])
+        df[col] = df[col].str.replace(',', '')
+        df[col] = df[col].str.replace('$', '')
+        df[col] = pd.to_numeric(df[col])
         df = df.fillna(0)
 
     # Set index
     df = df.set_index('Date').loc[:, 'Open':]
+
+    # Filter dates
+    start_date_str = start_date.strftime('%Y-%m-%d')
+    end_date_str = end_date.strftime('%Y-%m-%d')
+    df = df.loc[start_date_str:end_date_str]
+
+    # CoinMarketCap only returns data up to a certain date
+    try:
+        df.loc[start_date_str]
+    except KeyError:
+        raise IOError("You're too late to fetch data, the start date is too old! ")
 
     return df
 

@@ -90,6 +90,7 @@ scandir==1.7
 scikit-learn==0.19.1
 scipy==1.0.0
 select==0.0.1
+selenium==3.141.0
 Send2Trash==1.4.2
 shellescape==3.4.1
 simplegeneric==0.8.1
