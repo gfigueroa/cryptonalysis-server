@@ -16,10 +16,10 @@ logger = logging.getLogger()
 MASTER_DATA_DIR = os.path.join('cryptonalysis', 'data', 'master_data')
 PREPROCESSED_DATA_DIR = os.path.join('cryptonalysis', 'data', 'preprocessed')
 CRYPTOCURRENCIES = {
-    #'ETH': "ethereum",
+    'ETH': "ethereum",
     'BTC': "bitcoin",
     'XRP': "ripple",
-    #'LTC': "litecoin",
+    'LTC': "litecoin",
     # 'USDT': "tether"
 }
 RUNS = 1
