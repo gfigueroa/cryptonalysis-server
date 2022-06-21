@@ -64,7 +64,7 @@ Naked==0.1.31
 nbconvert==5.2.1
 nbformat==4.4.0
 notebook==5.7.8
-numpy==1.16.6
+numpy==1.22.0
 np-utils==0.5.10
 numpy-mkl==1.16.6
 pandas==0.22.0
