@@ -58,7 +58,7 @@ lxml==4.4.0
 Mako==1.0.7
 MarkupSafe==1.0
 matplotlib==2.1.2
-mistune==0.8.3
+mistune==2.0.3
 mkl==2018.0.0
 Naked==0.1.31
 nbconvert==5.2.1
