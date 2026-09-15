@@ -104,7 +104,7 @@ sqlparse==0.2.4
 tensorflow==1.13.1
 terminado==0.8.1
 testpath==0.3.1
-tornado==4.5.3
+tornado==6.5.8
 traitlets==4.3.2
 urllib3==1.24.2
 virtualenv==15.1.0
